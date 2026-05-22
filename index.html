@@ -38,6 +38,14 @@
       overflow-x: hidden;
     }
 
+    main,
+    .topbar,
+    footer {
+      width: min(88vw, 1680px);
+      margin-left: auto;
+      margin-right: auto;
+    }
+
     a { color: inherit; text-decoration: none; }
 
     .fiducial-overlay {
@@ -616,6 +624,183 @@
       background: var(--paper);
     }
 
+
+    .product-story-grid {
+      display: grid;
+      grid-template-columns: 0.74fr 1.26fr;
+      gap: 28px;
+      align-items: start;
+      border-top: 1px solid var(--line);
+      padding-top: 28px;
+    }
+
+    .product-copy {
+      border: 1px solid var(--line);
+      background: rgba(255, 253, 246, 0.48);
+      padding: 24px;
+      min-height: 100%;
+    }
+
+    .product-copy h3 {
+      margin: 0 0 16px;
+      font-size: 34px;
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .product-copy p {
+      margin: 0 0 16px;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 16px;
+    }
+
+    .product-copy p:last-child { margin-bottom: 0; }
+
+    .product-shot-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1px;
+      background: var(--line);
+    }
+
+    .product-shot {
+      margin: 0;
+      background: var(--paper);
+      padding: 0;
+      overflow: hidden;
+      cursor: zoom-in;
+    }
+
+    .product-shot img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      object-position: center;
+      background:
+        linear-gradient(135deg, rgba(55, 111, 90, 0.12), rgba(233, 90, 36, 0.12)),
+        var(--paper);
+    }
+
+    .product-lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 90;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 28px;
+      background: rgba(16, 17, 15, 0.78);
+    }
+
+    .product-lightbox.open {
+      display: flex;
+    }
+
+    .product-lightbox img {
+      display: block;
+      max-width: min(92vw, 1400px);
+      max-height: 86vh;
+      width: auto;
+      height: auto;
+      border: 1px solid var(--line);
+      background: var(--paper);
+      box-shadow: 18px 18px 0 rgba(0, 0, 0, 0.24);
+    }
+
+    .product-lightbox-close {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      width: 42px;
+      height: 42px;
+      border: 1px solid var(--paper);
+      border-radius: 999px;
+      background: rgba(16, 17, 15, 0.38);
+      color: var(--paper);
+      font-size: 28px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .large-image-stack {
+      display: grid;
+      gap: 1px;
+      width: 80%;
+      margin: 0 auto;
+      background: var(--line);
+      border-top: 1px solid var(--line);
+    }
+
+    .large-image-panel {
+      margin: 0;
+      background: var(--paper);
+      cursor: zoom-in;
+      overflow: hidden;
+    }
+
+    .large-image-panel img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      object-position: center;
+      background:
+        linear-gradient(135deg, rgba(55, 111, 90, 0.12), rgba(233, 90, 36, 0.12)),
+        var(--paper);
+    }
+
+    .about-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 28px;
+      align-items: start;
+      border-top: 1px solid var(--line);
+      padding-top: 28px;
+    }
+
+    .about-image {
+      margin: 0;
+      background: var(--paper);
+      cursor: zoom-in;
+      overflow: hidden;
+    }
+
+    .about-image img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      object-position: center;
+      background:
+        linear-gradient(135deg, rgba(55, 111, 90, 0.12), rgba(233, 90, 36, 0.12)),
+        var(--paper);
+    }
+
+    .about-copy {
+      border: 1px solid var(--line);
+      background: rgba(255, 253, 246, 0.48);
+      padding: 24px;
+      min-height: 100%;
+    }
+
+    .about-copy h3 {
+      margin: 0 0 16px;
+      font-size: 34px;
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .about-copy p {
+      margin: 0 0 16px;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 16px;
+    }
+
+    .about-copy p:last-child { margin-bottom: 0; }
+
     @media (max-width: 1100px) {
       h1 { font-size: 136px; }
       h2 { font-size: 58px; }
@@ -625,9 +810,12 @@
     }
 
     @media (max-width: 900px) {
+      main,
+      .topbar,
+      footer { width: 100%; }
       .editor-bar { position: static; align-items: flex-start; flex-direction: column; }
       .topbar { top: 0; }
-      .hero, .repeat-hero, .split, .dark-band { grid-template-columns: 1fr; }
+      .hero, .repeat-hero, .split, .dark-band, .product-story-grid, .about-grid { grid-template-columns: 1fr; }
       .hero-copy, .repeat-copy, .split > div:first-child { border-right: 0; }
       .hero-visual, .repeat-media { min-height: 520px; border-top: 1px solid var(--line); }
       h1 { font-size: 92px; white-space: normal; }
@@ -638,7 +826,8 @@
       .big-quote { font-size: 42px; }
       .grid-3 { grid-template-columns: 1fr; }
       .video-grid { grid-template-columns: 1fr; }
-      .video-grid-small { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .product-shot-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .large-image-stack { width: 100%; }
       .nav { display: none; }
       .section-head { display: block; }
       .spec-row { grid-template-columns: 1fr; gap: 8px; }
@@ -676,7 +865,7 @@
       .intro { font-size: 28px; }
       .waitlist-title { font-size: 26px; }
       .big-quote { font-size: 34px; }
-      .video-grid-small { grid-template-columns: 1fr; }
+      .product-shot-grid { grid-template-columns: 1fr; }
       .cta-row {
         flex-direction: column;
         align-items: stretch;
@@ -700,6 +889,9 @@ body.editing [data-edit], body.editing [data-edit]:focus { outline: none !import
 <a href="#eh01">EH-01</a>
 <a href="#features">Features</a>
 <a href="#specs">Specs</a>
+<a href="#hands-on">Computer</a>
+<a href="#product-shots">Photos</a>
+<a href="#video">Demos</a>
 <a href="#signup">Updates</a>
 </nav>
 </header>
@@ -751,6 +943,81 @@ body.editing [data-edit], body.editing [data-edit]:focus { outline: none !import
 </div>
 </div>
 </section>
+<section class="repeat-hero" id="hands-on">
+<div class="repeat-copy">
+<div>
+<div class="eyebrow"><span class="status-dot"></span><span>Hands-on sound design</span></div>
+<h2>Computer UI.</h2>
+<p class="repeat-intro">The EH-01 includes an offline Web MIDI console that turns a browser into a deeper control surface and sequencer.</p>
+<p class="subintro">The sequencer supports 32 steps, velocity, probability, pattern variations, smart mutate, motion sequencing, and per-step CC locks. This allows notes and parameter changes to be sequenced together, giving the EH-01 browser-assisted parameter-lock behaviour in a compact, local, no-install interface.</p>
+</div>
+</div>
+<div class="repeat-media">
+<img alt="EH-01 synth detail" src="images/eh01-synthR.jpg"/>
+</div>
+</section>
+<section class="section product-story" id="product-shots">
+<div class="section-head">
+<div>
+<div class="label">Product study</div>
+<h2>Launching soon — join the early list.</h2>
+</div>
+<p class="subintro">EH-01 is moving toward Kickstarter, and early support will help shape the first production run.</p>
+</div>
+<div class="product-story-grid">
+<div class="product-copy">
+<h3>EH-01 early access</h3>
+<p>Launching soon on Kickstarter, with limited early units planned from <strong>US$179</strong>. Expected retail pricing is around <strong>US$249</strong>.</p>
+<p>To support the project and reserve your chance to own an <strong>Edgehog EH-01</strong>, subscribe at the top of the page for release dates, production updates and launch news.</p>
+<p>Subscribers will get early access to launch updates, early-bird pricing and limited pre-release unit information while stock lasts.</p>
+<p>Join the list for early access. Prices shown in USD. Final Kickstarter pricing may vary slightly.</p>
+</div>
+<div class="product-shot-grid">
+<figure class="product-shot"><img alt="EH-01 product shot 01" src="images/img1.jpg"/></figure>
+<figure class="product-shot"><img alt="EH-01 product shot 02" src="images/img2.jpg"/></figure>
+<figure class="product-shot"><img alt="EH-01 product shot 03" src="images/img3.jpg"/></figure>
+<figure class="product-shot"><img alt="EH-01 product shot 04" src="images/img4.jpg"/></figure>
+<figure class="product-shot"><img alt="EH-01 product shot 05" src="images/img5.jpg"/></figure>
+<figure class="product-shot"><img alt="EH-01 product shot 06" src="images/img6.jpg"/></figure>
+</div>
+</div>
+</section>
+<section class="section large-images" id="large-product-shots">
+<div class="section-head">
+<div>
+<div class="label">Blueprint views</div>
+<h2>Schematic paths.</h2>
+</div>
+<p class="subintro">Blueprint-style views of EH-01's sound systems: voice flow, sample routing, control mappings, modulation paths and performance logic.</p>
+</div>
+<div class="large-image-stack">
+<figure class="large-image-panel"><img alt="EH-01 large product shot 01" src="images/Aa1.jpg"/></figure>
+<figure class="large-image-panel"><img alt="EH-01 large product shot 02" src="images/Aa2.jpg"/></figure>
+<figure class="large-image-panel"><img alt="EH-01 large product shot 03" src="images/Aa3.jpg"/></figure>
+</div>
+</section>
+<section class="section about-section" id="about">
+<div class="section-head">
+<div>
+<div class="label">About</div>
+<h2>About me.</h2>
+</div>
+<p class="subintro">A single-image section for the maker story, workshop shot, portrait, messy bench or anything that gives the project a human edge.</p>
+</div>
+<div class="about-grid">
+<figure class="about-image"><img alt="About Edgehog Systems" src="images/about.png"/></figure>
+<div class="about-copy">
+<h3>Designed, built and tested by hand.</h3>
+<p>Hi, my name is Leo Rolph. I’m a designer working from a small home studio in Fremantle, Western Australia. With a strong background in graphic and product design, I’ve always had a small obsession with electronics, synths and sound generation.</p>
+<p>EH-01 is the result of multiple years of experimentation, many synth prototypes and a long string of design choices. It did not start as a commercial product. It started as an instrument I wanted for myself: small, capable, non-standard, immediate and built around several different sound systems I could use for my own sound generation.</p>
+<p>The final EH-01 is an attempt to give other people the same kind of hands-on joy I get from playing with it.</p>
+</div>
+</div>
+</section>
+<div class="product-lightbox" id="productLightbox" aria-hidden="true">
+<button class="product-lightbox-close" type="button" aria-label="Close product image">×</button>
+<img alt="" id="productLightboxImage"/>
+</div>
 <section class="section" id="video">
 <div class="section-head">
 <div>
@@ -775,45 +1042,6 @@ body.editing [data-edit], body.editing [data-edit]:focus { outline: none !import
 <p>More texture, rhythm and raw sample behaviour from the current build.</p>
 </article>
 </div>
-<div class="video-grid-small">
-<article class="video-card small">
-<div class="video-frame">
-<iframe allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen="" referrerpolicy="strict-origin-when-cross-origin" src="https://www.youtube.com/embed/DDPaso-mj44?rel=0&amp;modestbranding=1&amp;playsinline=1&amp;origin=https://edgehog.beehiiv.com" title="EH-01 short demo 1"></iframe>
-</div>
-<h3>Demo clip 01</h3>
-</article>
-<article class="video-card small">
-<div class="video-frame">
-<iframe allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen="" referrerpolicy="strict-origin-when-cross-origin" src="https://www.youtube.com/embed/hzvN5yVdW6g?rel=0&amp;modestbranding=1&amp;playsinline=1&amp;origin=https://edgehog.beehiiv.com" title="EH-01 short demo 2"></iframe>
-</div>
-<h3>Demo clip 02</h3>
-</article>
-<article class="video-card small">
-<div class="video-frame">
-<iframe allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen="" referrerpolicy="strict-origin-when-cross-origin" src="https://www.youtube.com/embed/_E-FVi_rEJU?rel=0&amp;modestbranding=1&amp;playsinline=1&amp;origin=https://edgehog.beehiiv.com" title="EH-01 short demo 3"></iframe>
-</div>
-<h3>Demo clip 03</h3>
-</article>
-<article class="video-card small">
-<div class="video-frame">
-<iframe allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen="" referrerpolicy="strict-origin-when-cross-origin" src="https://www.youtube.com/embed/QYTxJGja1kA?rel=0&amp;modestbranding=1&amp;playsinline=1&amp;origin=https://edgehog.beehiiv.com" title="EH-01 short demo 4"></iframe>
-</div>
-<h3>Demo clip 04</h3>
-</article>
-</div>
-</section>
-<section class="repeat-hero" id="hands-on">
-<div class="repeat-copy">
-<div>
-<div class="eyebrow"><span class="status-dot"></span><span>Hands-on sound design</span></div>
-<h2>Computer UI.</h2>
-<p class="repeat-intro">The EH-01 includes an offline Web MIDI console that turns a browser into a deeper control surface and sequencer.</p>
-<p class="subintro">The sequencer supports 32 steps, velocity, probability, pattern variations, smart mutate, motion sequencing, and per-step CC locks. This allows notes and parameter changes to be sequenced together, giving the EH-01 browser-assisted parameter-lock behaviour in a compact, local, no-install interface.</p>
-</div>
-</div>
-<div class="repeat-media">
-<img alt="EH-01 synth detail" src="images/eh01-synthR.jpg"/>
-</div>
 </section>
 <section class="dark-band" id="signup">
 <h2>Sign up for your chance to own one before the first run goes live.</h2>
@@ -835,6 +1063,71 @@ body.editing [data-edit], body.editing [data-edit]:focus { outline: none !import
 <span>EH-01 / experimental sampler synth / Perth, Australia</span>
 </footer>
 <script>
+      const clone = document.documentElement.cloneNode(true);
+      const clonedBody = clone.querySelector("body");
+      if (clonedBody) clonedBody.classList.remove("text-editing");
+
+      clone.querySelectorAll("[contenteditable]").forEach(element => {
+        element.removeAttribute("contenteditable");
+        element.removeAttribute("spellcheck");
+      });
+
+      const html = "<!DOCTYPE html>\n" + clone.outerHTML;
+      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "edgehog-edited.html";
+      link.style.display = "none";
+      document.body.appendChild(link);
+
+      try {
+        link.click();
+        textEditorNote.textContent = "Downloaded edgehog-edited.html. Upload that file to GitHub.";
+      } catch (error) {
+        const fallbackWindow = window.open(url, "_blank");
+        textEditorNote.textContent = fallbackWindow
+          ? "Download was blocked, so the edited HTML opened in a new tab. Save that page as HTML."
+          : "Download was blocked. Try right-clicking the page and saving, or use Chrome/Edge.";
+      }
+
+      setTimeout(() => {
+        link.remove();
+        URL.revokeObjectURL(url);
+      }, 3000);
+
+      if (wasEditing) setTextEditMode(true);
+    });
+
+    setTextEditMode(false);
+
+    const productLightbox = document.getElementById("productLightbox");
+    const productLightboxImage = document.getElementById("productLightboxImage");
+    const productLightboxClose = document.querySelector(".product-lightbox-close");
+
+    document.querySelectorAll(".product-shot img, .large-image-panel img, .about-image img").forEach(image => {
+      image.addEventListener("click", () => {
+        productLightboxImage.src = image.src;
+        productLightboxImage.alt = image.alt;
+        productLightbox.classList.add("open");
+        productLightbox.setAttribute("aria-hidden", "false");
+        document.body.style.overflow = "hidden";
+      });
+    });
+
+    function closeProductLightbox() {
+      productLightbox.classList.remove("open");
+      productLightbox.setAttribute("aria-hidden", "true");
+      productLightboxImage.src = "";
+      document.body.style.overflow = "";
+    }
+
+    productLightboxClose.addEventListener("click", closeProductLightbox);
+    productLightbox.addEventListener("click", event => {
+      if (event.target === productLightbox) closeProductLightbox();
+    });
+
     const subscribeModal = document.getElementById("subscribeModal");
     const subscribeTriggers = Array.from(document.querySelectorAll("[data-subscribe-trigger]"));
 
@@ -857,6 +1150,7 @@ body.editing [data-edit], body.editing [data-edit]:focus { outline: none !import
       if (event.target === subscribeModal) closeSubscribeModal();
     });
     document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && productLightbox.classList.contains("open")) closeProductLightbox();
       if (event.key === "Escape" && subscribeModal.classList.contains("open")) closeSubscribeModal();
     });
   </script>
