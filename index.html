@@ -159,7 +159,7 @@
     .hero {
       min-height: 76vh;
       display: grid;
-      grid-template-columns: 1.10fr 0.90fr;
+      grid-template-columns: 1fr 1fr;
       border-bottom: 1px solid var(--line);
     }
 
@@ -181,27 +181,6 @@
     .hero-copy > div {
       position: relative;
       z-index: 1;
-    }
-
-    .eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      width: fit-content;
-      padding: 8px 11px;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      color: var(--muted);
-      font-size: 12px;
-      letter-spacing: 0;
-      text-transform: uppercase;
-    }
-
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
-      background: var(--orange);
     }
 
     h1 {
@@ -423,8 +402,6 @@
       object-fit: cover;
       object-position: center;
       display: block;
-      filter: grayscale(1) contrast(0.92) brightness(1.08);
-      opacity: 0.92;
     }
 
     .feature h3 {
@@ -499,16 +476,16 @@
       line-height: 1.2;
     }
     .repeat-hero {
-      min-height: 72vh;
+      min-height: 300px;
       display: grid;
-      grid-template-columns: 1.10fr 0.90fr;
+      grid-template-columns: 1fr 1fr;
       border-bottom: 1px solid var(--line);
     }
 
     .repeat-copy {
       position: relative;
       min-width: 0;
-      padding: 54px 28px 32px;
+      padding: 22px 28px 20px;
       border-right: 1px solid var(--line);
       overflow: hidden;
       background:
@@ -524,16 +501,16 @@
 
     .repeat-copy h2 {
       max-width: 900px;
-      margin: 38px 0 18px;
-      font-size: 132px;
-      line-height: 0.84;
+      margin: 0 0 16px;
+      font-size: 116px;
+      line-height: 0.82;
       white-space: nowrap;
     }
 
     .repeat-intro {
       max-width: 760px;
-      margin: 0 0 34px;
-      font-size: 38px;
+      margin: 0 0 18px;
+      font-size: 32px;
       line-height: 0.98;
     }
 
@@ -568,6 +545,11 @@
       line-height: 1;
       letter-spacing: 0;
       color: var(--orange);
+    }
+
+    .big-quote .quote-break {
+      display: block;
+      margin-top: 18px;
     }
 
     .spec-list {
@@ -726,11 +708,12 @@
 
     .large-image-stack {
       display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 1px;
-      width: 80%;
-      margin: 0 auto;
-      background: var(--line);
-      border-top: 1px solid var(--line);
+      width: 100%;
+      margin: 0;
+      background: var(--paper);
+      border-top: 1px solid var(--paper);
     }
 
     .large-image-panel {
@@ -866,6 +849,7 @@
       .waitlist-title { font-size: 26px; }
       .big-quote { font-size: 34px; }
       .product-shot-grid { grid-template-columns: 1fr; }
+      .large-image-stack { grid-template-columns: 1fr; }
       .cta-row {
         flex-direction: column;
         align-items: stretch;
@@ -887,10 +871,10 @@ body.editing [data-edit], body.editing [data-edit]:focus { outline: none !import
 <a class="brand" href="#top">Edgehog Systems</a>
 <nav aria-label="Main navigation" class="nav">
 <a href="#eh01">EH-01</a>
+<a href="#product-shots">Photos</a>
 <a href="#features">Features</a>
 <a href="#specs">Specs</a>
 <a href="#hands-on">Computer</a>
-<a href="#product-shots">Photos</a>
 <a href="#video">Demos</a>
 <a href="#signup">Updates</a>
 </nav>
@@ -899,7 +883,6 @@ body.editing [data-edit], body.editing [data-edit]:focus { outline: none !import
 <section class="hero" id="eh01">
 <div class="hero-copy">
 <div>
-<div class="eyebrow"><span class="status-dot"></span><span>Limited first run in development</span></div>
 <h1>EH-01</h1>
 <p class="intro">A compact experimental sampler synth.<br/>No menus. No LEDs. No screen.<br/>Just control.</p>
 <p class="subintro">Multiple synth systems, SD + memory playback, glitch, loop, morph, record and repeat in a small hands-on instrument built for immediate noise, rhythm and strange little moments.</p>
@@ -912,6 +895,32 @@ body.editing [data-edit], body.editing [data-edit]:focus { outline: none !import
 </div>
 <div class="hero-visual">
 <img alt="EH-01 synth Kickstarter launch image" class="hero-synth-image" src="images/eh01-synth2.jpg"/>
+</div>
+</section>
+<section class="section product-story" id="product-shots">
+<div class="section-head">
+<div>
+<div class="label">Product study</div>
+<h2>Launching soon<br/>join the early list.</h2>
+</div>
+<p class="subintro">EH-01 is moving toward Kickstarter, and early support will help shape the first production run.</p>
+</div>
+<div class="product-story-grid">
+<div class="product-copy">
+<h3>EH-01 early access</h3>
+<p>Launching soon on Kickstarter, with limited early units planned from <strong>US$179</strong>. Expected retail pricing is around <strong>US$249</strong>.</p>
+<p>To support the project and reserve your chance to own an <strong>Edgehog EH-01</strong>, subscribe at the top of the page for release dates, production updates and launch news.</p>
+<p>Subscribers will get early access to launch updates, early-bird pricing and limited pre-release unit information while stock lasts.</p>
+<p>Join the list for early access. Prices shown in USD. Final Kickstarter pricing may vary slightly.</p>
+</div>
+<div class="product-shot-grid">
+<figure class="product-shot"><img alt="EH-01 product shot 01" src="images/img1.jpg"/></figure>
+<figure class="product-shot"><img alt="EH-01 product shot 02" src="images/img2.jpg"/></figure>
+<figure class="product-shot"><img alt="EH-01 product shot 03" src="images/img3.jpg"/></figure>
+<figure class="product-shot"><img alt="EH-01 product shot 04" src="images/img4.jpg"/></figure>
+<figure class="product-shot"><img alt="EH-01 product shot 05" src="images/img5.jpg"/></figure>
+<figure class="product-shot"><img alt="EH-01 product shot 06" src="images/img6.jpg"/></figure>
+</div>
 </div>
 </section>
 <section class="section" id="features">
@@ -932,7 +941,7 @@ body.editing [data-edit], body.editing [data-edit]:focus { outline: none !import
 </div>
 </section>
 <section class="split" id="specs">
-<div><p class="big-quote">A strange little instrument from a slightly more useful timeline.</p></div>
+<div><p class="big-quote">All the clever bits hiding under the plastic.<span class="quote-break">A look at the tech</span></p></div>
 <div>
 <div class="spec-list">
 <div class="spec-row"><span>Platform</span><span>Teensy 4.1 based digital audio system</span></div>
@@ -946,40 +955,13 @@ body.editing [data-edit], body.editing [data-edit]:focus { outline: none !import
 <section class="repeat-hero" id="hands-on">
 <div class="repeat-copy">
 <div>
-<div class="eyebrow"><span class="status-dot"></span><span>Hands-on sound design</span></div>
 <h2>Computer UI.</h2>
 <p class="repeat-intro">The EH-01 includes an offline Web MIDI console that turns a browser into a deeper control surface and sequencer.</p>
 <p class="subintro">The sequencer supports 32 steps, velocity, probability, pattern variations, smart mutate, motion sequencing, and per-step CC locks. This allows notes and parameter changes to be sequenced together, giving the EH-01 browser-assisted parameter-lock behaviour in a compact, local, no-install interface.</p>
 </div>
 </div>
 <div class="repeat-media">
-<img alt="EH-01 synth detail" src="images/eh01-synthR.jpg"/>
-</div>
-</section>
-<section class="section product-story" id="product-shots">
-<div class="section-head">
-<div>
-<div class="label">Product study</div>
-<h2>Launching soon — join the early list.</h2>
-</div>
-<p class="subintro">EH-01 is moving toward Kickstarter, and early support will help shape the first production run.</p>
-</div>
-<div class="product-story-grid">
-<div class="product-copy">
-<h3>EH-01 early access</h3>
-<p>Launching soon on Kickstarter, with limited early units planned from <strong>US$179</strong>. Expected retail pricing is around <strong>US$249</strong>.</p>
-<p>To support the project and reserve your chance to own an <strong>Edgehog EH-01</strong>, subscribe at the top of the page for release dates, production updates and launch news.</p>
-<p>Subscribers will get early access to launch updates, early-bird pricing and limited pre-release unit information while stock lasts.</p>
-<p>Join the list for early access. Prices shown in USD. Final Kickstarter pricing may vary slightly.</p>
-</div>
-<div class="product-shot-grid">
-<figure class="product-shot"><img alt="EH-01 product shot 01" src="images/img1.jpg"/></figure>
-<figure class="product-shot"><img alt="EH-01 product shot 02" src="images/img2.jpg"/></figure>
-<figure class="product-shot"><img alt="EH-01 product shot 03" src="images/img3.jpg"/></figure>
-<figure class="product-shot"><img alt="EH-01 product shot 04" src="images/img4.jpg"/></figure>
-<figure class="product-shot"><img alt="EH-01 product shot 05" src="images/img5.jpg"/></figure>
-<figure class="product-shot"><img alt="EH-01 product shot 06" src="images/img6.jpg"/></figure>
-</div>
+<img alt="EH-01 synth detail" src="images/eh01-synthR2.jpg"/>
 </div>
 </section>
 <section class="section large-images" id="large-product-shots">
@@ -1063,58 +1045,17 @@ body.editing [data-edit], body.editing [data-edit]:focus { outline: none !import
 <span>EH-01 / experimental sampler synth / Perth, Australia</span>
 </footer>
 <script>
-      const clone = document.documentElement.cloneNode(true);
-      const clonedBody = clone.querySelector("body");
-      if (clonedBody) clonedBody.classList.remove("text-editing");
-
-      clone.querySelectorAll("[contenteditable]").forEach(element => {
-        element.removeAttribute("contenteditable");
-        element.removeAttribute("spellcheck");
-      });
-
-      const html = "<!DOCTYPE html>\n" + clone.outerHTML;
-      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "edgehog-edited.html";
-      link.style.display = "none";
-      document.body.appendChild(link);
-
-      try {
-        link.click();
-        textEditorNote.textContent = "Downloaded edgehog-edited.html. Upload that file to GitHub.";
-      } catch (error) {
-        const fallbackWindow = window.open(url, "_blank");
-        textEditorNote.textContent = fallbackWindow
-          ? "Download was blocked, so the edited HTML opened in a new tab. Save that page as HTML."
-          : "Download was blocked. Try right-clicking the page and saving, or use Chrome/Edge.";
-      }
-
-      setTimeout(() => {
-        link.remove();
-        URL.revokeObjectURL(url);
-      }, 3000);
-
-      if (wasEditing) setTextEditMode(true);
-    });
-
-    setTextEditMode(false);
-
     const productLightbox = document.getElementById("productLightbox");
     const productLightboxImage = document.getElementById("productLightboxImage");
     const productLightboxClose = document.querySelector(".product-lightbox-close");
 
-    document.querySelectorAll(".product-shot img, .large-image-panel img, .about-image img").forEach(image => {
-      image.addEventListener("click", () => {
-        productLightboxImage.src = image.src;
-        productLightboxImage.alt = image.alt;
-        productLightbox.classList.add("open");
-        productLightbox.setAttribute("aria-hidden", "false");
-        document.body.style.overflow = "hidden";
-      });
-    });
+    function openProductLightbox(image) {
+      productLightboxImage.src = image.src;
+      productLightboxImage.alt = image.alt;
+      productLightbox.classList.add("open");
+      productLightbox.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+    }
 
     function closeProductLightbox() {
       productLightbox.classList.remove("open");
@@ -1123,13 +1064,20 @@ body.editing [data-edit], body.editing [data-edit]:focus { outline: none !import
       document.body.style.overflow = "";
     }
 
-    productLightboxClose.addEventListener("click", closeProductLightbox);
-    productLightbox.addEventListener("click", event => {
-      if (event.target === productLightbox) closeProductLightbox();
-    });
+    if (productLightbox && productLightboxImage && productLightboxClose) {
+      document.querySelectorAll(".product-shot img, .large-image-panel img, .about-image img").forEach(image => {
+        image.addEventListener("click", () => openProductLightbox(image));
+      });
+
+      productLightboxClose.addEventListener("click", closeProductLightbox);
+      productLightbox.addEventListener("click", event => {
+        if (event.target === productLightbox) closeProductLightbox();
+      });
+    }
 
     const subscribeModal = document.getElementById("subscribeModal");
     const subscribeTriggers = Array.from(document.querySelectorAll("[data-subscribe-trigger]"));
+    const subscribeCloseButtons = Array.from(document.querySelectorAll("[data-subscribe-close]"));
 
     function openSubscribeModal(event) {
       event.preventDefault();
@@ -1144,14 +1092,18 @@ body.editing [data-edit], body.editing [data-edit]:focus { outline: none !import
       document.body.style.overflow = "";
     }
 
-    subscribeTriggers.forEach(trigger => trigger.addEventListener("click", openSubscribeModal));
-    document.querySelectorAll("[data-subscribe-close]").forEach(button => button.addEventListener("click", closeSubscribeModal));
-    subscribeModal.addEventListener("click", event => {
-      if (event.target === subscribeModal) closeSubscribeModal();
-    });
+    if (subscribeModal) {
+      subscribeTriggers.forEach(trigger => trigger.addEventListener("click", openSubscribeModal));
+      subscribeCloseButtons.forEach(button => button.addEventListener("click", closeSubscribeModal));
+      subscribeModal.addEventListener("click", event => {
+        if (event.target === subscribeModal) closeSubscribeModal();
+      });
+    }
+
     document.addEventListener("keydown", event => {
-      if (event.key === "Escape" && productLightbox.classList.contains("open")) closeProductLightbox();
-      if (event.key === "Escape" && subscribeModal.classList.contains("open")) closeSubscribeModal();
+      if (event.key !== "Escape") return;
+      if (productLightbox && productLightbox.classList.contains("open")) closeProductLightbox();
+      if (subscribeModal && subscribeModal.classList.contains("open")) closeSubscribeModal();
     });
   </script>
 
