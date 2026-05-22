@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS scores (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  map INTEGER NOT NULL,
+  seed INTEGER NOT NULL,
+  initials TEXT NOT NULL,
+  score INTEGER NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_scores_map_score
+ON scores (map, score DESC, created_at ASC);

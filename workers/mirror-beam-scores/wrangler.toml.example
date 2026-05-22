@@ -1,0 +1,11 @@
+name = "mirror-beam-scores"
+main = "worker.js"
+compatibility_date = "2026-05-22"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "mirror-beam-scores"
+database_id = "replace-with-your-d1-database-id"
+
+[vars]
+ALLOWED_ORIGIN = "https://your-site.example"
