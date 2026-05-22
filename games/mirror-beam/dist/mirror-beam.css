@@ -30,6 +30,41 @@ canvas {
   max-width: 100%;
 }
 
+:root {
+  --mirror-frame-h: 660px;
+}
+
+.mirror-desktop {
+  padding: 16px;
+}
+
+.mirror-layout,
+.mirror-panel,
+.mirror-stage {
+  height: var(--mirror-frame-h);
+}
+
+.mirror-instructions p {
+  margin: 0;
+  color: #9aa4b7;
+  line-height: 1.35;
+}
+
+.mirror-help-block {
+  border: 1px solid #303341;
+  background: #100e15;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.mirror-help-title {
+  margin-bottom: 5px;
+  color: #77e3ff;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.22em;
+}
+
 .block { display: block; }
 .fixed { position: fixed; }
 .relative { position: relative; }
