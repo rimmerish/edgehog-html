@@ -82,6 +82,7 @@ canvas {
 .flex-1 { flex: 1 1 0%; }
 .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .grid-cols-\[24px_1fr_46px\] { grid-template-columns: 24px 1fr 46px; }
+.grid-cols-\[24px_1fr_64px\] { grid-template-columns: 24px 1fr 64px; }
 .gap-2 { gap: 0.5rem; }
 .gap-4 { gap: 1rem; }
 .gap-x-2 { column-gap: 0.5rem; }
