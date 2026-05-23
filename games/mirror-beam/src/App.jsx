@@ -13,8 +13,10 @@ const FRAME_H = 660;
 const MAX_MAPS = 10;
 const TRACE_LIMIT = 5000;
 const SOURCE = { x: 64, y: 320 };
+const PLAY_AREA = { x: 28, y: 30, w: W - 56, h: H - 60, r: 8 };
 const SCOREBOARD_SIZE = 20;
 const ONLINE_FETCH_LIMIT = 200;
+const SOUND_PREF_KEY = "mb_clean_sound_on";
 const EPS = 1e-6;
 const rawScoreApi = typeof window !== "undefined" ? window.MIRROR_BEAM_SCORE_API : "";
 const SCORE_API_ENABLED = rawScoreApi === "same-origin" || Boolean(rawScoreApi);
@@ -33,6 +35,8 @@ const norm = (a) => {
 const reflect = (v, n) => add(v, mul(n, -2 * dot(v, n)));
 const fromAngle = (a) => ({ x: Math.cos(a), y: Math.sin(a) });
 const angleOf = (v) => Math.atan2(v.y, v.x);
+const angleDelta = (from, to) => Math.atan2(Math.sin(to - from), Math.cos(to - from));
+const easeAngle = (from, to, amount) => from + angleDelta(from, to) * amount;
 
 function rng(seed) {
   return () => (seed = (seed * 48271) % 0x7fffffff) / 0x7fffffff;
@@ -52,6 +56,41 @@ function raySegIntersect(o, d, p, q) {
     return { t, u: clamp(u, 0, 1), point: add(o, mul(d, t)) };
   }
   return null;
+}
+
+function rayPlayAreaHit(o, d) {
+  const area = PLAY_AREA;
+  const hits = [];
+
+  if (Math.abs(d.x) > EPS) {
+    const leftT = (area.x - o.x) / d.x;
+    const leftY = o.y + d.y * leftT;
+    if (leftT >= EPS && leftY >= area.y - EPS && leftY <= area.y + area.h + EPS) {
+      hits.push({ t: leftT, point: { x: area.x, y: leftY }, side: "left" });
+    }
+
+    const rightT = (area.x + area.w - o.x) / d.x;
+    const rightY = o.y + d.y * rightT;
+    if (rightT >= EPS && rightY >= area.y - EPS && rightY <= area.y + area.h + EPS) {
+      hits.push({ t: rightT, point: { x: area.x + area.w, y: rightY }, side: "right" });
+    }
+  }
+
+  if (Math.abs(d.y) > EPS) {
+    const topT = (area.y - o.y) / d.y;
+    const topX = o.x + d.x * topT;
+    if (topT >= EPS && topX >= area.x - EPS && topX <= area.x + area.w + EPS) {
+      hits.push({ t: topT, point: { x: topX, y: area.y }, side: "top" });
+    }
+
+    const bottomT = (area.y + area.h - o.y) / d.y;
+    const bottomX = o.x + d.x * bottomT;
+    if (bottomT >= EPS && bottomX >= area.x - EPS && bottomX <= area.x + area.w + EPS) {
+      hits.push({ t: bottomT, point: { x: bottomX, y: area.y + area.h }, side: "bottom" });
+    }
+  }
+
+  return hits.sort((a, b) => a.t - b.t)[0] || null;
 }
 
 function pointSegDist(p, a, b) {
@@ -202,6 +241,118 @@ function medalFor(score) {
   return MEDALS.find((m) => score >= m.min) || MEDALS[MEDALS.length - 1];
 }
 
+function loadSoundPreference() {
+  try {
+    return localStorage.getItem(SOUND_PREF_KEY) !== "0";
+  } catch {
+    return true;
+  }
+}
+
+function saveSoundPreference(on) {
+  try {
+    localStorage.setItem(SOUND_PREF_KEY, on ? "1" : "0");
+  } catch {}
+}
+
+function createSynthAudio() {
+  let ctx = null;
+  let master = null;
+
+  const ensure = () => {
+    if (typeof window === "undefined") return null;
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return null;
+    if (!ctx) {
+      ctx = new AudioCtx();
+      master = ctx.createGain();
+      master.gain.value = 0.36;
+      master.connect(ctx.destination);
+    }
+    if (ctx.state === "suspended") ctx.resume();
+    return ctx;
+  };
+
+  const tone = (c, start, freq, duration, options = {}) => {
+    const osc = c.createOscillator();
+    const gain = c.createGain();
+    osc.type = options.type || "square";
+    osc.frequency.setValueAtTime(Math.max(1, freq), start);
+    if (options.endFreq) {
+      osc.frequency.exponentialRampToValueAtTime(Math.max(1, options.endFreq), start + duration);
+    }
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.linearRampToValueAtTime(options.gain || 0.03, start + (options.attack || 0.004));
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+    osc.connect(gain);
+    gain.connect(master);
+    osc.start(start);
+    osc.stop(start + duration + 0.03);
+  };
+
+  const noise = (c, start, duration, options = {}) => {
+    const buffer = c.createBuffer(1, Math.max(1, Math.floor(c.sampleRate * duration)), c.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    const source = c.createBufferSource();
+    const filter = c.createBiquadFilter();
+    const gain = c.createGain();
+    source.buffer = buffer;
+    filter.type = options.filterType || "bandpass";
+    filter.frequency.setValueAtTime(options.frequency || 1800, start);
+    filter.Q.setValueAtTime(options.q || 5, start);
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.linearRampToValueAtTime(options.gain || 0.02, start + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(master);
+    source.start(start);
+    source.stop(start + duration + 0.02);
+  };
+
+  return {
+    resume() {
+      ensure();
+    },
+    play(name, options = {}) {
+      const c = ensure();
+      if (!c) return;
+      const now = c.currentTime + 0.006;
+      const count = Number(options.count) || 0;
+      const wobble = Number(options.value) || 0;
+
+      if (name === "button" || name === "toggle") {
+        tone(c, now, 164, 0.045, { type: "square", gain: 0.024, endFreq: 205 });
+        tone(c, now + 0.028, 246, 0.055, { type: "triangle", gain: 0.016 });
+      } else if (name === "select") {
+        tone(c, now, 420, 0.035, { type: "triangle", gain: 0.018, endFreq: 520 });
+      } else if (name === "move") {
+        tone(c, now, 105 + (wobble % 45), 0.034, { type: "sawtooth", gain: 0.011, endFreq: 90 + (wobble % 55) });
+      } else if (name === "rotate") {
+        tone(c, now, 170 + (wobble % 70), 0.045, { type: "triangle", gain: 0.014, endFreq: 210 + (wobble % 80) });
+      } else if (name === "aim") {
+        tone(c, now, 480 + (wobble % 90), 0.05, { type: "sine", gain: 0.012, endFreq: 560 + (wobble % 100) });
+      } else if (name === "bounce") {
+        tone(c, now, 320 + count * 18, 0.065, { type: "triangle", gain: 0.03, endFreq: 395 + count * 19 });
+        tone(c, now + 0.012, 640 + count * 20, 0.046, { type: "sine", gain: 0.01 });
+      } else if (name === "wall") {
+        noise(c, now, 0.07, { gain: 0.024, frequency: 2100, q: 7 });
+        tone(c, now, 118, 0.04, { type: "square", gain: 0.015, endFreq: 70 });
+        tone(c, now + 0.014, 980, 0.036, { type: "triangle", gain: 0.011, endFreq: 720 });
+      } else if (name === "target") {
+        tone(c, now, 392, 0.11, { type: "triangle", gain: 0.032 });
+        tone(c, now + 0.07, 523, 0.13, { type: "triangle", gain: 0.028 });
+        tone(c, now + 0.14, 784, 0.1, { type: "sine", gain: 0.012 });
+      } else if (name === "record") {
+        [440, 660, 880, 1320].forEach((freq, i) => {
+          tone(c, now + i * 0.055, freq, 0.07, { type: i % 2 ? "triangle" : "square", gain: 0.028 - i * 0.003 });
+        });
+      }
+    },
+  };
+}
+
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
@@ -255,6 +406,7 @@ function traceBeam(sourceAngle, mirrors, target) {
   let d = fromAngle(sourceAngle);
   const segments = [];
   const hitPoints = [];
+  const wallHits = [];
   let reflections = 0;
   let didHit = false;
 
@@ -265,7 +417,9 @@ function traceBeam(sourceAngle, mirrors, target) {
       if (h && (!best || h.t < best.t)) best = { ...h, idx: i };
     }
 
-    const end = add(o, mul(d, best ? best.t : 9999));
+    const wall = rayPlayAreaHit(o, d);
+    const stopT = Math.min(best ? best.t : Infinity, wall ? wall.t : Infinity, 9999);
+    const end = add(o, mul(d, stopT));
     const ab = sub(end, o);
     const tt = clamp(dot(sub(target, o), ab) / Math.max(dot(ab, ab), EPS), 0, 1);
     const close = add(o, mul(ab, tt));
@@ -276,8 +430,9 @@ function traceBeam(sourceAngle, mirrors, target) {
       break;
     }
 
-    if (!best) {
+    if (!best || (wall && wall.t <= best.t + EPS)) {
       segments.push({ from: o, to: end });
+      if (wall && wall.t <= stopT + EPS) wallHits.push(wall);
       break;
     }
 
@@ -289,7 +444,7 @@ function traceBeam(sourceAngle, mirrors, target) {
     reflections++;
   }
 
-  return { segments, hitPoints, hit: didHit, reflections };
+  return { segments, hitPoints, wallHits, hit: didHit, reflections };
 }
 
 function pixelRect(ctx, x, y, w, h, fill, stroke = null) {
@@ -361,7 +516,7 @@ function paintBackground(ctx, t) {
   ctx.fillRect(0, 0, W, H);
 
   const outer = { x: 12, y: 12, w: W - 24, h: H - 24, r: 18 };
-  const inner = { x: 28, y: 30, w: W - 56, h: H - 60, r: 8 };
+  const inner = PLAY_AREA;
 
   const frameGrad = ctx.createLinearGradient(outer.x, outer.y, outer.x + outer.w, outer.y + outer.h);
   frameGrad.addColorStop(0, "#8a8c87");
@@ -437,9 +592,49 @@ function paintBackground(ctx, t) {
 function drawBeam(ctx, trace, t) {
   const pts = [SOURCE, ...trace.segments.map((s) => s.to)];
   if (pts.length < 2) return;
+  const bounceEnergy = Math.min(1, trace.reflections / 12);
+  const floorWidth = 13 + bounceEnergy * 9;
+  const floorAlpha = 0.13 + bounceEnergy * 0.1;
+  const haloWidth = 4 + bounceEnergy * 5;
+  const midWidth = 1.4 + bounceEnergy * 1.4;
+  const coreWidth = 0.8 + bounceEnergy * 0.5;
+  const haloAlpha = 0.1 + bounceEnergy * 0.18;
+  const midAlpha = 0.34 + bounceEnergy * 0.25;
+  const pulseSize = 0.8 + bounceEnergy * 0.7;
   ctx.save();
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
+
+  roundedRectPath(ctx, PLAY_AREA.x, PLAY_AREA.y, PLAY_AREA.w, PLAY_AREA.h, PLAY_AREA.r);
+  ctx.clip();
+  ctx.globalCompositeOperation = "screen";
+  ctx.shadowColor = "rgba(71, 229, 255, 0.42)";
+  ctx.shadowBlur = 18 + bounceEnergy * 14;
+  ctx.strokeStyle = `rgba(48, 197, 244, ${floorAlpha})`;
+  ctx.lineWidth = floorWidth;
+  ctx.filter = "blur(1.2px)";
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1];
+    const b = pts[i];
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y + 1.8);
+    ctx.lineTo(b.x, b.y + 1.8);
+    ctx.stroke();
+  }
+
+  ctx.filter = "none";
+  ctx.shadowBlur = 8 + bounceEnergy * 8;
+  ctx.strokeStyle = `rgba(185, 250, 255, ${0.18 + bounceEnergy * 0.1})`;
+  ctx.lineWidth = 2.4 + bounceEnergy * 1.2;
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1];
+    const b = pts[i];
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y + 2.2);
+    ctx.lineTo(b.x, b.y + 2.2);
+    ctx.stroke();
+  }
+
   ctx.globalCompositeOperation = "lighter";
 
   const offset = (t * 0.08) % 22;
@@ -451,25 +646,25 @@ function drawBeam(ctx, trace, t) {
     const d = norm(seg);
 
     ctx.shadowColor = "#45dfff";
-    ctx.shadowBlur = 18;
-    ctx.strokeStyle = "rgba(40, 210, 255, 0.22)";
-    ctx.lineWidth = 14;
+    ctx.shadowBlur = 5 + bounceEnergy * 9;
+    ctx.strokeStyle = `rgba(40, 210, 255, ${haloAlpha})`;
+    ctx.lineWidth = haloWidth;
     ctx.beginPath();
     ctx.moveTo(a.x, a.y);
     ctx.lineTo(b.x, b.y);
     ctx.stroke();
 
-    ctx.shadowBlur = 11;
-    ctx.strokeStyle = "rgba(85, 226, 255, 0.58)";
-    ctx.lineWidth = 6;
+    ctx.shadowBlur = 3 + bounceEnergy * 6;
+    ctx.strokeStyle = `rgba(85, 226, 255, ${midAlpha})`;
+    ctx.lineWidth = midWidth;
     ctx.beginPath();
     ctx.moveTo(a.x, a.y);
     ctx.lineTo(b.x, b.y);
     ctx.stroke();
 
-    ctx.shadowBlur = 4;
+    ctx.shadowBlur = 1.5 + bounceEnergy * 3;
     ctx.strokeStyle = "#f4fdff";
-    ctx.lineWidth = 2;
+    ctx.lineWidth = coreWidth;
     ctx.beginPath();
     ctx.moveTo(a.x, a.y);
     ctx.lineTo(b.x, b.y);
@@ -479,7 +674,7 @@ function drawBeam(ctx, trace, t) {
     for (let p = offset; p < L; p += 22) {
       const q = add(a, mul(d, p));
       ctx.beginPath();
-      ctx.arc(q.x, q.y, 1.6, 0, Math.PI * 2);
+      ctx.arc(q.x, q.y, pulseSize, 0, Math.PI * 2);
       ctx.fill();
     }
   }
@@ -490,41 +685,42 @@ function sourceHandlePos(angle) {
   return add(SOURCE, mul(fromAngle(angle), 34));
 }
 function mirrorHandlePos(m) {
-  return add({ x: m.cx, y: m.cy }, mul(fromAngle(m.angle), m.length / 2 + 12));
+  return add({ x: m.cx, y: m.cy }, mul(fromAngle(m.angle), m.length / 2 + 20));
 }
 
 function drawMirror(ctx, m, selected, hovered) {
-  const width = selected || hovered ? 13 : 11;
+  const width = selected || hovered ? 8 : 6;
   ctx.save();
   ctx.translate(m.cx, m.cy);
   ctx.rotate(m.angle);
-  ctx.shadowColor = "rgba(0,0,0,0.5)";
-  ctx.shadowBlur = 8;
-  ctx.shadowOffsetX = 3;
-  ctx.shadowOffsetY = 7;
-  fillRoundedRect(ctx, -m.length / 2 - 3, -width / 2 - 3, m.length + 6, width + 6, 5, "#24211b");
+  ctx.shadowColor = "rgba(0,0,0,0.3)";
+  ctx.shadowBlur = 4;
+  ctx.shadowOffsetX = 1.5;
+  ctx.shadowOffsetY = 4;
+  fillRoundedRect(ctx, -m.length / 2 - 1, -width / 2 - 1, m.length + 2, width + 2, 3, "rgba(34,29,24,0.58)");
   ctx.shadowBlur = 0;
 
   const body = ctx.createLinearGradient(0, -width / 2, 0, width / 2);
-  body.addColorStop(0, selected ? "#ffd56d" : "#b97722");
-  body.addColorStop(0.18, "#f0a12c");
-  body.addColorStop(0.5, "#6f3e12");
-  body.addColorStop(0.82, "#f1a43a");
-  body.addColorStop(1, "#4a2a10");
-  fillRoundedRect(ctx, -m.length / 2, -width / 2, m.length, width, 4, body);
-  fillRoundedRect(ctx, -m.length / 2 + 5, -2, m.length - 10, 4, 2, "rgba(235,247,255,0.72)");
-  fillRoundedRect(ctx, -m.length / 2 + 7, -1, m.length - 14, 2, 1, "rgba(35,80,110,0.48)");
-  strokeRoundedRect(ctx, -m.length / 2, -width / 2, m.length, width, 4, selected ? "#ffe7a5" : "rgba(28,17,8,0.85)", 1.4);
+  body.addColorStop(0, selected ? "#ffe29a" : "#c17a22");
+  body.addColorStop(0.2, "#f2a43a");
+  body.addColorStop(0.55, "#8d4f13");
+  body.addColorStop(1, "#51310f");
+  fillRoundedRect(ctx, -m.length / 2, -width / 2, m.length, width, 3, body);
+  fillRoundedRect(ctx, -m.length / 2 + 4, -1.5, m.length - 8, 3, 1.5, "rgba(232,248,255,0.74)");
+  fillRoundedRect(ctx, -m.length / 2 + 5, -0.5, m.length - 10, 1, 0.5, "rgba(37,87,116,0.42)");
+  if (selected || hovered) {
+    strokeRoundedRect(ctx, -m.length / 2 - 1, -width / 2 - 1, m.length + 2, width + 2, 3, selected ? "#ffe7a5" : "rgba(235,240,238,0.6)", 1);
+  }
   ctx.restore();
 
-  pixelRect(ctx, m.cx - 3, m.cy - 3, 6, 6, selected ? "#ffe49b" : "#4e5a63", "#23292d");
+  fillRoundedRect(ctx, m.cx - 2.5, m.cy - 2.5, 5, 5, 2, selected ? "#ffe49b" : "#58656b");
   const handle = mirrorHandlePos(m);
-  fillRoundedRect(ctx, handle.x - 5, handle.y - 5, 10, 10, 3, selected ? "#ffd56d" : "#c06b2d", {
-    color: "rgba(0,0,0,0.38)",
-    blur: 4,
+  fillRoundedRect(ctx, handle.x - 4, handle.y - 4, 8, 8, 3, selected ? "#ffd56d" : "#c06b2d", {
+    color: "rgba(0,0,0,0.26)",
+    blur: 3,
     y: 2,
   });
-  strokeRoundedRect(ctx, handle.x - 5, handle.y - 5, 10, 10, 3, "#2d160c", 1);
+  strokeRoundedRect(ctx, handle.x - 4, handle.y - 4, 8, 8, 3, "#6b3510", 0.8);
 }
 
 function drawSource(ctx, angle, selected) {
@@ -608,6 +804,70 @@ function drawImpactSparks(ctx, points, t) {
   }
 }
 
+function wallNormal(side) {
+  if (side === "left") return { x: 1, y: 0 };
+  if (side === "right") return { x: -1, y: 0 };
+  if (side === "top") return { x: 0, y: 1 };
+  return { x: 0, y: -1 };
+}
+
+function drawWallSparks(ctx, hits, t, reflections) {
+  const energy = Math.min(1, reflections / 12);
+  for (let h = 0; h < Math.min(hits.length, 8); h++) {
+    const hit = hits[h];
+    const p = hit.point;
+    const normal = wallNormal(hit.side);
+    const tangent = { x: -normal.y, y: normal.x };
+    const base = angleOf(normal);
+    const pulse = 0.55 + 0.45 * Math.sin(t * 0.038 + h * 1.7);
+
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.shadowColor = "#75eaff";
+    ctx.shadowBlur = 14 + energy * 12;
+    ctx.fillStyle = `rgba(244, 253, 255, ${0.65 + pulse * 0.25})`;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 2.1 + energy * 1.1, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(150, 242, 255, 0.64)";
+    ctx.lineWidth = 1.1;
+    for (const side of [-1, 1]) {
+      const a = add(p, mul(tangent, side * (3 + pulse * 2)));
+      const b = add(p, mul(tangent, side * (10 + energy * 3)));
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+    }
+
+    for (let i = 0; i < 11; i++) {
+      const spread = -1.05 + i * 0.21;
+      const jitter = Math.sin(t * 0.021 + i * 2.13 + h) * 0.18;
+      const a = base + spread + jitter;
+      const dir = fromAngle(a);
+      const lenSpark = (7 + ((i * 7 + h * 3) % 10)) * (0.78 + pulse * 0.5 + energy * 0.45);
+      const start = add(p, mul(normal, 1.2));
+      const end = add(start, mul(dir, lenSpark));
+
+      ctx.strokeStyle = i % 3 === 0 ? "rgba(255, 223, 127, 0.94)" : "rgba(107, 232, 255, 0.84)";
+      ctx.lineWidth = i % 3 === 0 ? 1.45 : 1;
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.stroke();
+
+      if (i % 4 === 1) {
+        ctx.fillStyle = "rgba(255, 238, 168, 0.8)";
+        ctx.beginPath();
+        ctx.arc(end.x, end.y, 1.1, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+}
+
 function drawHUD(ctx, map, trace, best, hasInteracted, compact = false) {
   if (compact) return;
   fillRoundedRect(ctx, 14, 16, 230, 60, 4, "rgba(35,38,42,0.68)", {
@@ -642,16 +902,21 @@ function drawMedal(ctx, text, color, subline) {
   ctx.textAlign = "start";
 }
 
-function TopControls({ nextMap, resetMap }) {
+function TopControls({ nextMap, resetMap, soundOn, toggleSound }) {
   return (
-    <div className="flex gap-2">
-      <button onClick={nextMap} className="flex-1 px-3 py-2 border-2 border-[#5a6272] bg-[#272433] hover:bg-[#333047] font-bold text-sm text-[#e9e3d1]">NEXT MAP</button>
-      <button onClick={resetMap} className="flex-1 px-3 py-2 border-2 border-[#5a6272] bg-[#272433] hover:bg-[#333047] font-bold text-sm text-[#e9e3d1]">RESET</button>
+    <div className="flex flex-col gap-2">
+      <div className="flex gap-2">
+        <button onClick={nextMap} className="flex-1 px-3 py-2 border-2 border-[#5a6272] bg-[#272433] hover:bg-[#333047] font-bold text-sm text-[#e9e3d1]">NEXT MAP</button>
+        <button onClick={resetMap} className="flex-1 px-3 py-2 border-2 border-[#5a6272] bg-[#272433] hover:bg-[#333047] font-bold text-sm text-[#e9e3d1]">RESET</button>
+      </div>
+      <button onClick={toggleSound} className={`px-3 py-2 border-2 font-black text-[10px] ${soundOn ? "border-[#8a7a46] bg-[#f4d35e] text-black" : "border-[#5a6272] bg-[#1f1c29] text-[#d3d8e2]"}`}>
+        {soundOn ? "SFX ON" : "SFX OFF"}
+      </button>
     </div>
   );
 }
 
-function MobileTopBar({ map, score, best, hasInteracted, nextMap, resetMap }) {
+function MobileTopBar({ map, score, best, hasInteracted, nextMap, resetMap, soundOn, toggleSound }) {
   return (
     <div className="w-full max-w-[380px] border-2 border-[#61543a] bg-[#15111a] px-2 py-2 text-[#e9e3d1] shadow-[0_0_0_2px_#09070d]">
       <div className="flex items-center gap-2">
@@ -663,16 +928,17 @@ function MobileTopBar({ map, score, best, hasInteracted, nextMap, resetMap }) {
         </div>
         <button onClick={nextMap} className="px-2 py-2 border-2 border-[#5a6272] bg-[#272433] text-[10px] font-black">NEXT</button>
         <button onClick={resetMap} className="px-2 py-2 border-2 border-[#5a6272] bg-[#272433] text-[10px] font-black">RESET</button>
+        <button onClick={toggleSound} className={`px-2 py-2 border-2 text-[10px] font-black ${soundOn ? "border-[#8a7a46] bg-[#f4d35e] text-black" : "border-[#5a6272] bg-[#1f1c29] text-[#d3d8e2]"}`}>{soundOn ? "SFX" : "OFF"}</button>
       </div>
     </div>
   );
 }
 
-function ScoreboardPanel({ map, scores, currentScore, best, hasInteracted, nextMap, resetMap, scoreStatus }) {
+function ScoreboardPanel({ map, scores, currentScore, best, hasInteracted, nextMap, resetMap, scoreStatus, soundOn, toggleSound }) {
   return (
     <div className="mirror-panel w-56 border-2 border-[#61543a] bg-[#15111a] text-[#e9e3d1] shadow-[0_0_0_2px_#09070d] overflow-hidden flex flex-col">
       <div className="px-4 py-3 border-b-2 border-[#3e4250] bg-[#201a26]">
-        <TopControls nextMap={nextMap} resetMap={resetMap} />
+        <TopControls nextMap={nextMap} resetMap={resetMap} soundOn={soundOn} toggleSound={toggleSound} />
         <div className="mt-4 text-[11px] font-black tracking-[0.22em] text-[#f4d35e]">CURRENT MAP</div>
         <div className="mt-1 flex justify-between text-[11px] text-[#9aa4b7]"><span>MAP {map + 1}</span><span>BEST {best == null ? "--" : best}</span></div>
         <div className="mt-2 flex justify-between text-[10px] text-[#7f90ad]"><span>initials on record</span><span>{scoreStatus}</span></div>
@@ -799,6 +1065,20 @@ function ClearModal({ map, score, best, nextMap, resetMap }) {
   );
 }
 
+function SplashScreen({ enterGame }) {
+  return (
+    <div className="fixed inset-0 z-20 mirror-splash flex items-center justify-center">
+      <div className="mirror-splash-card">
+        <div className="mirror-splash-kicker">EDGEHOG SYSTEMS</div>
+        <div className="mirror-splash-title">MIRROR BEAM</div>
+        <div className="mirror-splash-rule">More reflections. More points.</div>
+        <p>Angle the source, tune the mirrors, and hit the green target.</p>
+        <button onClick={enterGame} className="mirror-splash-button">ENTER GAME</button>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const canvasRef = useRef(null);
   const isMobile = useIsMobile();
@@ -809,7 +1089,7 @@ export default function App() {
   const [sourceAngle, setSourceAngle] = useState(0);
   const [drag, setDrag] = useState(null);
   const [hoverMirror, setHoverMirror] = useState(null);
-  const [trace, setTrace] = useState({ segments: [], hitPoints: [], hit: false, reflections: 0 });
+  const [trace, setTrace] = useState({ segments: [], hitPoints: [], wallHits: [], hit: false, reflections: 0 });
   const [celebrate, setCelebrate] = useState(false);
   const [lastMedal, setLastMedal] = useState(null);
   const [prevBest, setPrevBest] = useState(null);
@@ -820,12 +1100,52 @@ export default function App() {
   const [scoreStatus, setScoreStatus] = useState(SCORE_API_ENABLED ? "SYNCING" : "LOCAL");
   const [hasInteracted, setHasInteracted] = useState(false);
   const [hasClearedThisAttempt, setHasClearedThisAttempt] = useState(false);
+  const [soundOn, setSoundOn] = useState(loadSoundPreference);
+  const [introOpen, setIntroOpen] = useState(true);
+  const audioRef = useRef(null);
+  const soundOnRef = useRef(soundOn);
+  const dragSoundAtRef = useRef(0);
+  const beamSoundRef = useRef({ reflections: 0, wallKey: "", wallAt: 0 });
 
   const finalScore = trace.reflections;
   const seed = stageSeed(map);
   const scores = useMemo(() => currentMapScores(mergeScores(loadScores(seed), onlineScores), map), [map, seed, scoreVersion, onlineScores]);
   const localBest = loadBest(seed);
   const best = scores.length ? Math.max(localBest == null ? -Infinity : localBest, scores[0].score) : localBest;
+
+  useEffect(() => {
+    soundOnRef.current = soundOn;
+  }, [soundOn]);
+
+  const primeSound = () => {
+    if (!soundOnRef.current) return;
+    if (!audioRef.current) audioRef.current = createSynthAudio();
+    audioRef.current.resume();
+  };
+
+  const playSound = (name, options = {}) => {
+    if (!soundOnRef.current) return;
+    if (!audioRef.current) audioRef.current = createSynthAudio();
+    audioRef.current.play(name, options);
+  };
+
+  const toggleSound = () => {
+    const next = !soundOnRef.current;
+    soundOnRef.current = next;
+    saveSoundPreference(next);
+    setSoundOn(next);
+    if (next) {
+      if (!audioRef.current) audioRef.current = createSynthAudio();
+      audioRef.current.resume();
+      audioRef.current.play("toggle");
+    }
+  };
+
+  const enterGame = () => {
+    primeSound();
+    playSound("button");
+    setIntroOpen(false);
+  };
 
   useEffect(() => {
     const workingSeed = stageSeed(map) + mapAttempt * 99991;
@@ -839,6 +1159,7 @@ export default function App() {
     setPendingScore(null);
     setHasInteracted(false);
     setHasClearedThisAttempt(false);
+    beamSoundRef.current = { reflections: 0, wallKey: "", wallAt: 0 };
   }, [map, mapAttempt]);
 
   useEffect(() => {
@@ -873,6 +1194,34 @@ export default function App() {
   }, [map, seed, scoreVersion]);
 
   useEffect(() => {
+    const prev = beamSoundRef.current;
+    if (!hasInteracted || hasClearedThisAttempt) {
+      prev.reflections = trace.reflections;
+      prev.wallKey = "";
+      return;
+    }
+
+    if (trace.reflections > prev.reflections) {
+      playSound("bounce", { count: trace.reflections });
+    }
+
+    const wall = (trace.wallHits || [])[0];
+    if (wall && !trace.hit) {
+      const key = `${wall.side}:${Math.round(wall.point.x / 6)}:${Math.round(wall.point.y / 6)}`;
+      const now = performance.now();
+      if (key !== prev.wallKey || now - prev.wallAt > 240) {
+        playSound("wall", { count: trace.reflections });
+        prev.wallKey = key;
+        prev.wallAt = now;
+      }
+    } else {
+      prev.wallKey = "";
+    }
+
+    prev.reflections = trace.reflections;
+  }, [trace, hasInteracted, hasClearedThisAttempt]);
+
+  useEffect(() => {
     if (!hasInteracted || !trace.hit || pendingScore || hasClearedThisAttempt) return;
 
     const oldBest = best;
@@ -882,6 +1231,7 @@ export default function App() {
     setHasClearedThisAttempt(true);
 
     const beatsRecord = oldBest == null || finalScore > oldBest;
+    playSound(beatsRecord ? "record" : "target", { score: finalScore });
     if (beatsRecord) {
       saveBest(seed, finalScore);
       setInitials("AAA");
@@ -921,7 +1271,8 @@ export default function App() {
       }
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.imageSmoothingEnabled = false;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
     };
     fit();
     window.addEventListener("resize", fit);
@@ -934,6 +1285,7 @@ export default function App() {
       drawSource(ctx, sourceAngle, drag?.type === "source-rotate");
       drawBeam(ctx, trace, t);
       drawImpactSparks(ctx, trace.hitPoints, t);
+      drawWallSparks(ctx, trace.wallHits || [], t, trace.reflections);
       for (let i = 0; i < mirrors.length; i++) drawMirror(ctx, mirrors[i], drag?.idx === i, hoverMirror === i);
       drawTarget(ctx, target, trace.hit, t, hasInteracted);
       drawHUD(ctx, map, trace, best, hasInteracted, isMobile);
@@ -959,18 +1311,22 @@ export default function App() {
 
   const onDown = (e) => {
     e.preventDefault();
+    primeSound();
     const p = getLocal(e);
     if (len(sub(p, sourceHandlePos(sourceAngle))) < 11) {
+      playSound("select");
       setDrag({ type: "source-rotate" });
       return;
     }
     for (let i = mirrors.length - 1; i >= 0; i--) {
       const m = mirrors[i];
       if (len(sub(p, mirrorHandlePos(m))) < 11) {
+        playSound("select");
         setDrag({ type: "mirror-rotate", idx: i });
         return;
       }
       if (pointSegDist(p, m.a, m.b) < 11) {
+        playSound("select");
         setDrag({ type: "mirror-move", idx: i, x: p.x, y: p.y });
         return;
       }
@@ -991,6 +1347,12 @@ export default function App() {
     e.preventDefault();
     setHasInteracted(true);
     setCelebrate(false);
+    const now = performance.now();
+    if (now - dragSoundAtRef.current > 115) {
+      const name = drag.type === "source-rotate" ? "aim" : drag.type === "mirror-rotate" ? "rotate" : "move";
+      playSound(name, { value: p.x + p.y + sourceAngle * 100 });
+      dragSoundAtRef.current = now;
+    }
 
     if (drag.type === "source-rotate") {
       setSourceAngle(angleOf(sub(p, SOURCE)));
@@ -1006,24 +1368,32 @@ export default function App() {
     }
 
     if (drag.type === "mirror-rotate") {
-      setMirrors((ms) => ms.map((m, i) => i === drag.idx ? rebuildMirror({ ...m, angle: angleOf(sub(p, { x: m.cx, y: m.cy })) }) : m));
+      setMirrors((ms) => ms.map((m, i) => {
+        if (i !== drag.idx) return m;
+        const targetAngle = angleOf(sub(p, { x: m.cx, y: m.cy }));
+        const ease = e.shiftKey ? 0.16 : 0.42;
+        return rebuildMirror({ ...m, angle: easeAngle(m.angle, targetAngle, ease) });
+      }));
     }
   };
 
   const onUp = () => setDrag(null);
 
   const nextMap = () => {
+    playSound("button");
     setPendingScore(null);
     setMap((m) => (m + 1) % MAX_MAPS);
   };
 
   const resetMap = () => {
+    playSound("button");
     setPendingScore(null);
     setMapAttempt((a) => a + 1);
   };
 
   const submitInitials = () => {
     if (!pendingScore) return;
+    playSound("button");
     const name = cleanInitials(initials) || "AAA";
     const entry = { initials: name, score: pendingScore.score, map: pendingScore.map, seed: pendingScore.seed, time: pendingScore.time };
     addScore(pendingScore.seed, entry);
@@ -1041,6 +1411,7 @@ export default function App() {
 
   const skipInitials = () => {
     if (!pendingScore) return;
+    playSound("button");
     saveBest(pendingScore.seed, pendingScore.score);
     setPendingScore(null);
     setMap((pendingScore.map + 1) % MAX_MAPS);
@@ -1049,7 +1420,7 @@ export default function App() {
   if (isMobile) {
     return (
       <div className="w-full h-screen bg-[#07070d] flex flex-col items-center justify-start select-none overflow-hidden p-2 gap-2">
-        <MobileTopBar map={map} score={finalScore} best={best} hasInteracted={hasInteracted} nextMap={nextMap} resetMap={resetMap} />
+        <MobileTopBar map={map} score={finalScore} best={best} hasInteracted={hasInteracted} nextMap={nextMap} resetMap={resetMap} soundOn={soundOn} toggleSound={toggleSound} />
 
         <div className="relative border-2 border-[#61543a] bg-[#100d14] p-2 shadow-[0_0_0_2px_#09070d] flex items-center justify-center">
           <canvas
@@ -1057,7 +1428,7 @@ export default function App() {
             width={W}
             height={H}
             className="block bg-black cursor-crosshair touch-none"
-            style={{ imageRendering: "pixelated" }}
+            style={{ imageRendering: "auto" }}
             onMouseDown={onDown}
             onMouseMove={onMove}
             onMouseUp={onUp}
@@ -1073,6 +1444,7 @@ export default function App() {
         )}
 
         <InitialsModal pendingScore={pendingScore} initials={initials} setInitials={setInitials} submitInitials={submitInitials} skipInitials={skipInitials} />
+        {introOpen && <SplashScreen enterGame={enterGame} />}
       </div>
     );
   }
@@ -1089,6 +1461,8 @@ export default function App() {
           nextMap={nextMap}
           resetMap={resetMap}
           scoreStatus={scoreStatus}
+          soundOn={soundOn}
+          toggleSound={toggleSound}
         />
 
         <div className="mirror-stage relative border-2 border-[#61543a] bg-[#100d14] p-2 shadow-[0_0_0_2px_#09070d] flex items-center">
@@ -1097,7 +1471,7 @@ export default function App() {
             width={W}
             height={H}
             className="block bg-black cursor-crosshair"
-            style={{ imageRendering: "pixelated" }}
+            style={{ imageRendering: "auto" }}
             onMouseDown={onDown}
             onMouseMove={onMove}
             onMouseUp={onUp}
@@ -1116,6 +1490,7 @@ export default function App() {
       )}
 
       <InitialsModal pendingScore={pendingScore} initials={initials} setInitials={setInitials} submitInitials={submitInitials} skipInitials={skipInitials} />
+      {introOpen && <SplashScreen enterGame={enterGame} />}
     </div>
   );
 }

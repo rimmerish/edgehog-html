@@ -65,6 +65,68 @@ canvas {
   letter-spacing: 0.22em;
 }
 
+.mirror-splash {
+  padding: 16px;
+  background:
+    radial-gradient(circle at 50% 38%, rgba(82, 228, 255, 0.18), transparent 28%),
+    rgba(4, 5, 8, 0.82);
+  backdrop-filter: blur(3px);
+}
+
+.mirror-splash-card {
+  width: min(360px, calc(100vw - 32px));
+  border: 2px solid #8a7a46;
+  background: #15111a;
+  box-shadow: 0 0 0 2px #09070d, 0 24px 60px rgba(0, 0, 0, 0.55);
+  padding: 22px;
+  text-align: center;
+  color: #e9e3d1;
+}
+
+.mirror-splash-kicker {
+  color: #77e3ff;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.26em;
+}
+
+.mirror-splash-title {
+  margin-top: 8px;
+  color: #f4d35e;
+  font-size: 36px;
+  font-weight: 900;
+  line-height: 0.95;
+}
+
+.mirror-splash-rule {
+  margin-top: 14px;
+  color: #f0ead8;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.mirror-splash-card p {
+  margin: 10px 0 0;
+  color: #9aa4b7;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.mirror-splash-button {
+  margin-top: 22px;
+  width: 100%;
+  border: 2px solid #8a7a46;
+  background: #f4d35e;
+  color: #000;
+  padding: 12px 14px;
+  font-weight: 900;
+  font-size: 14px;
+}
+
+.mirror-splash-button:hover {
+  background: #ffe17c;
+}
+
 .block { display: block; }
 .fixed { position: fixed; }
 .relative { position: relative; }
