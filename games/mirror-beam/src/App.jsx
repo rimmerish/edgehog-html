@@ -16,7 +16,11 @@ const SOURCE = { x: 64, y: 320 };
 const PLAY_AREA = { x: 28, y: 30, w: W - 56, h: H - 60, r: 8 };
 const SCOREBOARD_SIZE = 20;
 const ONLINE_FETCH_LIMIT = 200;
+const SCORE_SEASON = 2;
+const ONLINE_LEVEL_OFFSET = SCORE_SEASON * 1000;
 const SOUND_PREF_KEY = "mb_clean_sound_on";
+const SFX_MASTER_VOLUME = 0.82;
+const SFX_GAIN_BOOST = 3.2;
 const EPS = 1e-6;
 const rawScoreApi = typeof window !== "undefined" ? window.MIRROR_BEAM_SCORE_API : "";
 const SCORE_API_ENABLED = rawScoreApi === "same-origin" || Boolean(rawScoreApi);
@@ -106,11 +110,33 @@ function segNormal(a, b) {
   return { x: -d.y / l, y: d.x / l };
 }
 
+function onlineLevelForMap(map) {
+  return ONLINE_LEVEL_OFFSET + map;
+}
+
+function mapFromOnlineLevel(level, fallbackMap) {
+  const n = Number(level);
+  if (!Number.isFinite(n)) return fallbackMap;
+  if (n >= ONLINE_LEVEL_OFFSET && n < ONLINE_LEVEL_OFFSET + MAX_MAPS) return n - ONLINE_LEVEL_OFFSET;
+  return n;
+}
+
 function bestKey(seed) {
-  return `mb_clean_best_${seed}`;
+  return `mb_clean_s${SCORE_SEASON}_best_${seed}`;
 }
 function scoreKey(seed) {
-  return `mb_clean_scores_${seed}`;
+  return `mb_clean_s${SCORE_SEASON}_scores_${seed}`;
+}
+function clearLegacyScoreStorage() {
+  try {
+    const prefixes = ["mb_clean_best_", "mb_clean_scores_"];
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (prefixes.some((prefix) => key && key.startsWith(prefix))) {
+        localStorage.removeItem(key);
+      }
+    }
+  } catch {}
 }
 function loadBest(seed) {
   try {
@@ -177,37 +203,59 @@ function currentMapScores(scores, map) {
 }
 async function fetchOnlineScores(map, seed) {
   if (!SCORE_API_ENABLED) return null;
-  const res = await fetch(`${SCORE_API_BASE}/api/scores?map=${map}&seed=${seed}`, {
+  const onlineLevel = onlineLevelForMap(map);
+  const res = await fetch(`${SCORE_API_BASE}/api/scores?map=${onlineLevel}&seed=${seed}&season=${SCORE_SEASON}`, {
     headers: { Accept: "application/json" },
   });
   if (!res.ok) return fetchCloudflareAiScores(map, seed);
   const scores = await res.json();
-  return Array.isArray(scores) ? scores.map((score) => normalizeScoreEntry({ ...score, map, seed })) : [];
+  return Array.isArray(scores)
+    ? scores
+        .map((score) => normalizeScoreEntry({
+          ...score,
+          map: mapFromOnlineLevel(score.map ?? score.level ?? onlineLevel, map),
+          seed,
+        }))
+        .filter((score) => score.map === map)
+    : [];
 }
 async function submitOnlineScore(entry) {
   if (!SCORE_API_ENABLED) return false;
+  const score = normalizeScoreEntry(entry);
   const res = await fetch(`${SCORE_API_BASE}/api/scores`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(normalizeScoreEntry(entry)),
+    body: JSON.stringify({
+      ...score,
+      map: onlineLevelForMap(score.map),
+      level: onlineLevelForMap(score.map),
+      season: SCORE_SEASON,
+    }),
   });
   if (res.ok) return true;
   return submitCloudflareAiScore(entry);
 }
 async function fetchCloudflareAiScores(map, seed) {
-  const res = await fetch(`${SCORE_API_BASE}/scores?limit=${ONLINE_FETCH_LIMIT}&level=${map}`, {
+  const onlineLevel = onlineLevelForMap(map);
+  const res = await fetch(`${SCORE_API_BASE}/scores?limit=${ONLINE_FETCH_LIMIT}&level=${onlineLevel}`, {
     headers: { Accept: "application/json" },
   });
   if (!res.ok) throw new Error("Could not load scores");
   const scores = await res.json();
   return Array.isArray(scores)
-    ? scores.map((score) => normalizeScoreEntry({
-        initials: score.initials || score.player_name,
-        score: score.score,
-        map: score.map ?? score.level ?? map,
-        seed,
-        created_at: score.created_at,
-      })).filter((score) => score.map === map)
+    ? scores
+        .map((score) => {
+          const rawLevel = Number(score.map ?? score.level);
+          if (rawLevel !== onlineLevel) return null;
+          return normalizeScoreEntry({
+            initials: score.initials || score.player_name,
+            score: score.score,
+            map,
+            seed,
+            created_at: score.created_at,
+          });
+        })
+        .filter(Boolean)
     : [];
 }
 async function submitCloudflareAiScore(entry) {
@@ -218,7 +266,7 @@ async function submitCloudflareAiScore(entry) {
     body: JSON.stringify({
       player_name: score.initials,
       score: score.score,
-      level: score.map,
+      level: onlineLevelForMap(score.map),
     }),
   });
   return res.ok;
@@ -266,8 +314,15 @@ function createSynthAudio() {
     if (!ctx) {
       ctx = new AudioCtx();
       master = ctx.createGain();
-      master.gain.value = 0.36;
-      master.connect(ctx.destination);
+      const limiter = ctx.createDynamicsCompressor();
+      limiter.threshold.value = -12;
+      limiter.knee.value = 8;
+      limiter.ratio.value = 10;
+      limiter.attack.value = 0.003;
+      limiter.release.value = 0.12;
+      master.gain.value = SFX_MASTER_VOLUME;
+      master.connect(limiter);
+      limiter.connect(ctx.destination);
     }
     if (ctx.state === "suspended") ctx.resume();
     return ctx;
@@ -281,8 +336,9 @@ function createSynthAudio() {
     if (options.endFreq) {
       osc.frequency.exponentialRampToValueAtTime(Math.max(1, options.endFreq), start + duration);
     }
+    const peak = Math.min(options.maxGain || 0.18, (options.gain || 0.03) * SFX_GAIN_BOOST);
     gain.gain.setValueAtTime(0.0001, start);
-    gain.gain.linearRampToValueAtTime(options.gain || 0.03, start + (options.attack || 0.004));
+    gain.gain.linearRampToValueAtTime(peak, start + (options.attack || 0.004));
     gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
     osc.connect(gain);
     gain.connect(master);
@@ -301,8 +357,9 @@ function createSynthAudio() {
     filter.type = options.filterType || "bandpass";
     filter.frequency.setValueAtTime(options.frequency || 1800, start);
     filter.Q.setValueAtTime(options.q || 5, start);
+    const peak = Math.min(options.maxGain || 0.16, (options.gain || 0.02) * SFX_GAIN_BOOST);
     gain.gain.setValueAtTime(0.0001, start);
-    gain.gain.linearRampToValueAtTime(options.gain || 0.02, start + 0.005);
+    gain.gain.linearRampToValueAtTime(peak, start + 0.005);
     gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
     source.connect(filter);
     filter.connect(gain);
@@ -1112,6 +1169,10 @@ export default function App() {
   const scores = useMemo(() => currentMapScores(mergeScores(loadScores(seed), onlineScores), map), [map, seed, scoreVersion, onlineScores]);
   const localBest = loadBest(seed);
   const best = scores.length ? Math.max(localBest == null ? -Infinity : localBest, scores[0].score) : localBest;
+
+  useEffect(() => {
+    clearLegacyScoreStorage();
+  }, []);
 
   useEffect(() => {
     soundOnRef.current = soundOn;
