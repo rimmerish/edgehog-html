@@ -1,0 +1,10 @@
+{
+  "name": "mirror-beam",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build-static.mjs",
+    "serve": "node scripts/serve-static.mjs"
+  }
+}
