@@ -888,7 +888,7 @@ body.editing [data-edit], body.editing [data-edit]:focus { outline: none !import
 <a href="/midi%20console.html">MIDI</a>
 <a href="#video">Demos</a>
 <a class="game-link" href="/games/mirror-beam/">Game</a>
-<a href="#signup">Updates</a>
+<a href="#signup">Kickstarter</a>
 </nav>
 </header>
 <main id="top">
@@ -899,10 +899,10 @@ body.editing [data-edit], body.editing [data-edit]:focus { outline: none !import
 <p class="intro">A compact experimental sampler synth.<br/>No menus. No LEDs. No screen.<br/>Just control.</p>
 <p class="subintro">Multiple synth systems, SD + memory playback, glitch, loop, morph, record and repeat in a small hands-on instrument built for immediate noise, rhythm and strange little moments.</p>
 <div class="cta-row">
-<a class="button primary" data-subscribe-trigger="" href="https://edgehog.beehiiv.com/subscribe">Join the WAIT list</a>
+<a class="button primary" href="https://www.kickstarter.com/projects/1397757174/eh-01-a-compact-experimental-sampler-synth" rel="noopener" target="_blank">Follow on Kickstarter</a>
 <a class="button" href="#features">See features</a>
 </div>
-<div class="waitlist-title">JOIN KICKSTARTER WAIT LIST</div>
+<div class="waitlist-title">NOW ON KICKSTARTER JOIN FOR EARLY BIRD DEALS</div>
 </div>
 </div>
 <div class="hero-visual">
@@ -913,17 +913,17 @@ body.editing [data-edit], body.editing [data-edit]:focus { outline: none !import
 <div class="section-head">
 <div>
 <div class="label">Product study</div>
-<h2>Launching soon<br/>join the early list.</h2>
+<h2>Now on Kickstarter<br/>follow for early bird deals.</h2>
 </div>
-<p class="subintro">EH-01 is moving toward Kickstarter, and early support will help shape the first production run.</p>
+<p class="subintro">EH-01 is live on Kickstarter, and early support will help shape the first production run.</p>
 </div>
 <div class="product-story-grid">
 <div class="product-copy">
 <h3>EH-01 early access</h3>
-<p>Launching soon on Kickstarter, with limited early units planned from <strong>US$179</strong>. Expected retail pricing is around <strong>US$249</strong>.</p>
-<p>To support the project and reserve your chance to own an <strong>Edgehog EH-01</strong>, subscribe at the top of the page for release dates, production updates and launch news.</p>
-<p>Subscribers will get early access to launch updates, early-bird pricing and limited pre-release unit information while stock lasts.</p>
-<p>Join the list for early access. Prices shown in USD. Final Kickstarter pricing may vary slightly.</p>
+<p>EH-01 is now on Kickstarter, with limited early units planned from <strong>US$179</strong>. Expected retail pricing is around <strong>US$249</strong>.</p>
+<p>To support the project and reserve your chance to own an <strong>Edgehog EH-01</strong>, follow the campaign on Kickstarter for release dates, production updates and launch news.</p>
+<p>Kickstarter followers will get launch updates, early-bird pricing and limited pre-release unit information while stock lasts.</p>
+<p>Follow on Kickstarter for early bird deals. Prices shown in USD. Final Kickstarter pricing may vary slightly.</p>
 </div>
 <div class="product-shot-grid">
 <figure class="product-shot"><img alt="EH-01 product shot 01" src="images/img1.jpg"/></figure>
@@ -1040,20 +1040,10 @@ body.editing [data-edit], body.editing [data-edit]:focus { outline: none !import
 </div>
 </section>
 <section class="dark-band" id="signup">
-<h2>Sign up for your chance to own one before the first run goes live.</h2>
-<a class="button" data-subscribe-trigger="" href="https://edgehog.beehiiv.com/subscribe">get early access</a>
+<h2>Follow EH-01 on Kickstarter for early bird deals.</h2>
+<a class="button" href="https://www.kickstarter.com/projects/1397757174/eh-01-a-compact-experimental-sampler-synth" rel="noopener" target="_blank">Follow on Kickstarter</a>
 </section>
 </main>
-<div aria-hidden="true" class="subscribe-modal" id="subscribeModal">
-<div aria-label="Subscribe for EH-01 updates" aria-modal="true" class="subscribe-dialog" role="dialog">
-<div class="subscribe-head">
-<div class="subscribe-title">EH-01 updates</div>
-<button aria-label="Close subscribe form" class="subscribe-close" data-subscribe-close="" type="button">×</button>
-</div>
-<iframe class="subscribe-frame" loading="lazy" src="https://edgehog.beehiiv.com/subscribe" title="Subscribe to Edgehog updates"></iframe>
-<div class="subscribe-fallback">If the form does not load, <a href="https://edgehog.beehiiv.com/subscribe" rel="noopener" target="_blank">open the Beehiiv subscribe page</a>.</div>
-</div>
-</div>
 <footer>
 <span>(c) 2026 Edgehog Systems</span>
 <span>EH-01 / experimental sampler synth / Perth, Australia</span>
@@ -1089,35 +1079,9 @@ body.editing [data-edit], body.editing [data-edit]:focus { outline: none !import
       });
     }
 
-    const subscribeModal = document.getElementById("subscribeModal");
-    const subscribeTriggers = Array.from(document.querySelectorAll("[data-subscribe-trigger]"));
-    const subscribeCloseButtons = Array.from(document.querySelectorAll("[data-subscribe-close]"));
-
-    function openSubscribeModal(event) {
-      event.preventDefault();
-      subscribeModal.classList.add("open");
-      subscribeModal.setAttribute("aria-hidden", "false");
-      document.body.style.overflow = "hidden";
-    }
-
-    function closeSubscribeModal() {
-      subscribeModal.classList.remove("open");
-      subscribeModal.setAttribute("aria-hidden", "true");
-      document.body.style.overflow = "";
-    }
-
-    if (subscribeModal) {
-      subscribeTriggers.forEach(trigger => trigger.addEventListener("click", openSubscribeModal));
-      subscribeCloseButtons.forEach(button => button.addEventListener("click", closeSubscribeModal));
-      subscribeModal.addEventListener("click", event => {
-        if (event.target === subscribeModal) closeSubscribeModal();
-      });
-    }
-
     document.addEventListener("keydown", event => {
       if (event.key !== "Escape") return;
       if (productLightbox && productLightbox.classList.contains("open")) closeProductLightbox();
-      if (subscribeModal && subscribeModal.classList.contains("open")) closeSubscribeModal();
     });
   </script>
 
