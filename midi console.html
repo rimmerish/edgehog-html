@@ -4,8 +4,8 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>EH-01 Console</title>
-<link rel="icon" type="image/png" href="New%20folder%20(2)/images/favicon.png" />
-<link rel="apple-touch-icon" href="New%20folder%20(2)/images/favicon.png" />
+<link rel="icon" type="image/png" href="images/favicon.png" />
+<link rel="apple-touch-icon" href="images/favicon.png" />
 <style>
 :root{--bg:#050806;--panel:#080d09;--panel2:#0d140d;--screen:#030503;--text:#f3c64f;--dim:#a77c26;--line:#e2b64b;--hot:#ffe083;--green:#b9cc58;--red:#f06a42;--blue:#6faeb4;--shadow:rgba(255,208,82,.18);--font:'Courier New',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 body.bw{--bg:#050505;--panel:#0a0a0a;--panel2:#111;--screen:#030303;--text:#e8e8e8;--dim:#8c8c8c;--line:#d8d8d8;--hot:#fff;--green:#d0d0d0;--red:#bdbdbd;--blue:#cfcfcf;--shadow:rgba(255,255,255,.10)}body.invert{--bg:#f4ecd6;--panel:#fff8e6;--panel2:#f5ead0;--screen:#fffdf0;--text:#2a2214;--dim:#72541b;--line:#8a641f;--hot:#111;--green:#516b20;--red:#8d2e1d;--blue:#265b68;--shadow:rgba(0,0,0,.12)}body.greencrt{--bg:#001105;--panel:#001707;--panel2:#00200b;--screen:#000b03;--text:#7cff6b;--dim:#2f8f3f;--line:#45e35c;--hot:#b8ff9b;--green:#7cff6b;--red:#7cff6b;--blue:#58ffbe;--shadow:rgba(83,255,94,.22)}
@@ -1266,15 +1266,15 @@ makeControls();makeKeys();installK448Library();installK448VoiceLibrary();install
   webButton.type = 'button';
   webButton.textContent = 'WEB';
   webButton.addEventListener('click', () => {
-    window.location.href = 'New%20folder%20(2)/index.html';
+    window.location.href = 'index.html';
   });
 
   const sampleButton = document.createElement('button');
   sampleButton.type = 'button';
   sampleButton.textContent = 'SAMPLE BUILDER';
-  sampleButton.className = 'green';
+  sampleButton.className = 'red';
   sampleButton.addEventListener('click', () => {
-    window.location.href = '../../../../Downloads/EH01_Sample_Builder_v0_5.html';
+    window.location.href = 'EH01_Sample_Builder_v0_5.html';
   });
 
   header.insertBefore(sampleButton, themeButton);

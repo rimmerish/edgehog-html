@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>EH-01 Sample Builder</title>
-<link rel="icon" type="image/png" href="../OneDrive/Desktop/Edgehog/site/New%20folder%20(2)/images/favicon.png">
-<link rel="apple-touch-icon" href="../OneDrive/Desktop/Edgehog/site/New%20folder%20(2)/images/favicon.png">
+<link rel="icon" type="image/png" href="images/favicon.png">
+<link rel="apple-touch-icon" href="images/favicon.png">
 <style>
 :root{
   --bg:#050806;--panel:#080d09;--panel2:#0d140d;--screen:#030503;
@@ -414,7 +414,7 @@ footer{font-size:clamp(10px,1.12vh,12px)}
   <div class="status header-hide">8 SLOT SD BANK</div>
   <button id="openSiteBtn">Web</button>
   <button id="themeBtn">Theme</button>
-  <button id="openConsoleBtn" class="blue">MIDI Console</button>
+  <button id="openConsoleBtn" class="red">MIDI Console</button>
   <div id="midiStatus" class="status">NO MIDI</div>
 </header>
 
@@ -1329,8 +1329,8 @@ $('format').onchange=renderSummary;
 
 const themes=['','bw','greencrt','invert'];let themeIndex=0;
 $('themeBtn').onclick=()=>{document.body.classList.remove('bw','greencrt','invert');themeIndex=(themeIndex+1)%themes.length;if(themes[themeIndex])document.body.classList.add(themes[themeIndex]);drawWave()};
-$('openSiteBtn').onclick=()=>{window.location.href='../OneDrive/Desktop/Edgehog/site/New%20folder%20(2)/index.html'};
-$('openConsoleBtn').onclick=()=>{window.location.href='../OneDrive/Desktop/Edgehog/site/midi%20console.html'};
+$('openSiteBtn').onclick=()=>{window.location.href='index.html'};
+$('openConsoleBtn').onclick=()=>{window.location.href='midi%20console.html'};
 
 window.addEventListener('keydown',e=>{
   if(e.repeat||/INPUT|SELECT/.test(document.activeElement.tagName))return;
