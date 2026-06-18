@@ -541,6 +541,15 @@
       line-height: 0.98;
     }
 
+    .repeat-copy .subintro + .subintro {
+      margin-top: 14px;
+    }
+
+    .sample-builder-section .repeat-copy h2 {
+      font-size: 88px;
+      white-space: normal;
+    }
+
     .repeat-media {
       min-width: 0;
       min-height: 100%;
@@ -833,6 +842,7 @@
       h1 { font-size: 92px; white-space: normal; }
       h2 { font-size: 46px; }
       .repeat-copy h2 { font-size: 76px; white-space: normal; }
+      .sample-builder-section .repeat-copy h2 { font-size: 64px; }
       .repeat-intro { font-size: 30px; }
       .intro { font-size: 32px; }
       .big-quote { font-size: 42px; }
@@ -873,6 +883,7 @@
       h1 { font-size: 68px; white-space: normal; }
       h2 { font-size: 38px; }
       .repeat-copy h2 { font-size: 56px; white-space: normal; }
+      .sample-builder-section .repeat-copy h2 { font-size: 44px; }
       .repeat-intro { font-size: 26px; }
       .intro { font-size: 28px; }
       .waitlist-title { font-size: 26px; }
@@ -903,9 +914,8 @@ body.editing [data-edit], body.editing [data-edit]:focus { outline: none !import
 <a href="#product-shots">Photos</a>
 <a href="#features">Features</a>
 <a href="#specs">Specs</a>
-<a href="#hands-on">Computer</a>
-<a class="tool-link" href="EH01_Sample_Builder_v0_5.html">Sample Builder</a>
-<a class="tool-link" href="midi%20console.html">MIDI</a>
+<a class="tool-link" href="#midi-console">MIDI Console</a>
+<a class="tool-link" href="#sample-builder">Sample Builder</a>
 <a href="#video">Demos</a>
 <a class="game-link" href="/games/mirror-beam/">Game</a>
 <a href="#signup">Kickstarter</a>
@@ -984,10 +994,10 @@ body.editing [data-edit], body.editing [data-edit]:focus { outline: none !import
 </div>
 </div>
 </section>
-<section class="repeat-hero" id="hands-on">
+<section class="repeat-hero" id="midi-console">
 <div class="repeat-copy">
 <div>
-<h2>Computer UI.</h2>
+<h2>MIDI Console.</h2>
 <p class="repeat-intro">The EH-01 includes an offline Web MIDI console that turns a browser into a deeper control surface and sequencer.</p>
 <p class="subintro">The sequencer supports 32 steps, velocity, probability, pattern variations, smart mutate, motion sequencing, and per-step CC locks. This allows notes and parameter changes to be sequenced together, giving the EH-01 browser-assisted parameter-lock behaviour in a compact, local, no-install interface.</p>
 <div class="cta-row">
@@ -997,6 +1007,22 @@ body.editing [data-edit], body.editing [data-edit]:focus { outline: none !import
 </div>
 <div class="repeat-media">
 <img alt="EH-01 synth detail" src="images/eh01-synthR2.jpg"/>
+</div>
+</section>
+<section class="repeat-hero sample-builder-section" id="sample-builder">
+<div class="repeat-copy">
+<div>
+<h2>EH-01 Sample Builder</h2>
+<p class="repeat-intro">A simple browser-based tool for creating and managing EH-01 sample banks.</p>
+<p class="subintro">Load, record, trim and shape sounds directly in the browser, then export them in the correct EH-01 format with the right file names and folder structure. The Sample Builder also includes waveform editing, normalisation, noise reduction, pitch and filter controls, echo, drive and direct MIDI audition.</p>
+<p class="subintro">Everything runs locally, so your audio is not uploaded to a server. No extra software, no third-party converters, and no menu-diving on the hardware.</p>
+<div class="cta-row">
+<a class="button primary" href="EH01_Sample_Builder_v0_5.html">Open Sample Builder</a>
+</div>
+</div>
+</div>
+<div class="repeat-media">
+<img alt="EH-01 Sample Builder browser tool" src="samplex.jpg"/>
 </div>
 </section>
 <section class="section large-images" id="large-product-shots">
