@@ -405,6 +405,16 @@ footer{font-size:clamp(10px,1.12vh,12px)}
   .dial{width:74px}
 }
 
+
+/* V0.6 direct EH-01 USB transfer */
+.transfer-progress{
+  width:100%;height:2.6vh;min-height:20px;appearance:none;border:2px solid var(--line);
+  background:#020302;clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)
+}
+.transfer-progress::-webkit-progress-bar{background:#020302}
+.transfer-progress::-webkit-progress-value{background:linear-gradient(90deg,var(--green),var(--hot))}
+.transfer-progress::-moz-progress-bar{background:linear-gradient(90deg,var(--green),var(--hot))}
+
 </style>
 </head>
 <body>
@@ -455,6 +465,17 @@ footer{font-size:clamp(10px,1.12vh,12px)}
     </div>
     <button id="clearAllBtn" class="red">Clear Bank</button>
     <div id="exportInfo" class="mini-status warn">LOAD AT LEAST ONE SAMPLE</div>
+
+    <h2>EH-01 USB TRANSFER</h2>
+    <div class="two">
+      <button id="serialConnectBtn" class="blue">Connect EH-01</button>
+      <button id="serialUploadBtn" class="green" disabled>Upload Bank</button>
+    </div>
+    <button id="serialCancelBtn" class="red" disabled>Cancel Transfer</button>
+    <progress id="serialProgress" class="transfer-progress" max="100" value="0"></progress>
+    <div id="serialStatus" class="mini-status">USB SERIAL NOT CONNECTED</div>
+    <div class="tiny">Direct upload always writes EH-01 RAW 44.1K mono files to /SAMPLES/BANK. Close Arduino Serial Monitor first.</div>
+
     <div class="metrics">
       <div class="metric"><strong id="countMetric">0 / 8</strong><span>Loaded</span></div>
       <div class="metric"><strong id="durationMetric">0:00</strong><span>Trimmed</span></div>
@@ -594,7 +615,7 @@ footer{font-size:clamp(10px,1.12vh,12px)}
 
 <footer>
   <div id="footerStatus">READY · CHROME / EDGE / BRAVE RECOMMENDED · DROP AUDIO DIRECTLY ONTO A PAD</div>
-  <div>SAMPLE BUILDER V0.5</div>
+  <div>SAMPLE BUILDER V0.6</div>
 </footer>
 <input id="picker" type="file" accept="audio/*" multiple>
 </main></div>
@@ -611,6 +632,9 @@ function defaultFx(){return {enabled:true,pitch:0,cutoff:1,resonance:.033,echo:0
 const fxSlots=Array.from({length:8},()=>defaultFx());
 let selected=0,pickerMode='single',pickerSlot=0,localSource=null,localMaster=null,waveZoom=1,wavePan=0;
 let midiAccess=null,midiInput=null,midiOutput=null,fxMidiEnabled=false;
+let serialPort=null,serialReader=null,serialWriter=null,serialReadTask=null;
+let serialTextBuffer='',serialLineQueue=[],serialWaiters=[];
+let serialUploadActive=false,serialCancelRequested=false;
 let recStream=null,recSource=null,recFilter=null,recAnalyser=null,recProcessor=null,recSilentGain=null;
 let recChunks=[],recSamples=0,recSlot=0,recStartedAt=0,recTimer=null,recMeterRaf=null,recording=false;
 let monitorInput=false;
@@ -628,6 +652,8 @@ function setFooter(t){$('footerStatus').textContent=t}
 function setMidiInfo(t,cls=''){$('midiInfo').textContent=t;$('midiInfo').className='mini-status '+cls}
 function setMidiStatus(t,cls=''){$('midiStatus').textContent=t;$('midiStatus').className='status '+cls}
 function setExport(t,cls='warn'){$('exportInfo').textContent=t;$('exportInfo').className='mini-status '+cls}
+function setSerialStatus(t,cls=''){$('serialStatus').textContent=t;$('serialStatus').className='mini-status '+cls}
+function setSerialProgress(v){$('serialProgress').value=Math.max(0,Math.min(100,Number(v)||0))}
 
 function setRecordStatus(t,cls=''){
   $('recordStatus').textContent=t;
@@ -1194,6 +1220,7 @@ function renderSummary(){
   const bytes=Math.ceil(dur*rate*2)+loaded.length*header;
   $('countMetric').textContent=loaded.length+' / 8';$('durationMetric').textContent=fmtDuration(dur);$('sizeMetric').textContent=fmtBytes(bytes);
   $('folderBtn').disabled=$('downloadBtn').disabled=loaded.length===0;
+  $('serialUploadBtn').disabled=loaded.length===0||serialUploadActive||!('serial' in navigator);
   setExport(loaded.length===8?'BANK COMPLETE · READY TO EXPORT':loaded.length?loaded.length+' SLOT'+(loaded.length===1?'':'S')+' LOADED · EMPTY SLOTS SKIPPED':'LOAD AT LEAST ONE SAMPLE',loaded.length===8?'ok':'warn');
 }
 function renderAll(){renderPads();renderEditor();renderSummary();renderFxControls()}
@@ -1255,6 +1282,141 @@ $('connectBtn').onclick=connectMidi;$('midiIn').onchange=selectMidiPorts;$('midi
 $('setSdBtn').onclick=()=>{if(sendCC(80,64)){setMidiInfo('EH-01 SD MODE REQUEST SENT · CC80=64','ok');setFooter('EH-01 SET TO SD SAMPLE MODE')}};
 $('panicBtn').onclick=()=>{for(let i=0;i<128;i++)sendMidi([0x80,i,0]);sendCC(123,0);stopLocal();setFooter('ALL NOTES OFF')};
 
+function serialRenderUi(){
+  const supported='serial' in navigator;
+  $('serialConnectBtn').textContent=serialPort?'Disconnect EH-01':'Connect EH-01';
+  $('serialConnectBtn').disabled=serialUploadActive||!supported;
+  $('serialCancelBtn').disabled=!serialUploadActive;
+  const loaded=slots.some(s=>s.buffer);
+  $('serialUploadBtn').disabled=!loaded||serialUploadActive||!supported;
+  if(!supported)setSerialStatus('WEB SERIAL NEEDS CHROME / EDGE DESKTOP','error')
+}
+function serialDispatchLine(line){
+  line=String(line||'').trim();if(!line)return;
+  if(line.startsWith('EH01_'))console.log('[EH-01]',line);
+  const i=serialWaiters.findIndex(w=>w.test(line));
+  if(i>=0){const w=serialWaiters.splice(i,1)[0];clearTimeout(w.timer);w.resolve(line)}
+  else{serialLineQueue.push(line);if(serialLineQueue.length>120)serialLineQueue.shift()}
+}
+function serialWaitLine(test,timeout=8000){
+  const i=serialLineQueue.findIndex(test);
+  if(i>=0)return Promise.resolve(serialLineQueue.splice(i,1)[0]);
+  return new Promise((resolve,reject)=>{
+    const w={test,resolve,reject,timer:null};
+    w.timer=setTimeout(()=>{const n=serialWaiters.indexOf(w);if(n>=0)serialWaiters.splice(n,1);reject(new Error('EH-01 serial response timeout'))},timeout);
+    serialWaiters.push(w)
+  })
+}
+async function serialWaitEh01(prefix,timeout=10000){
+  const line=await serialWaitLine(l=>l.startsWith(prefix)||l.startsWith('EH01_ERROR '),timeout);
+  if(line.startsWith('EH01_ERROR '))throw new Error(line.slice(12).replaceAll('_',' '));
+  return line
+}
+async function serialReadLoop(){
+  const decoder=new TextDecoder();
+  try{
+    serialReader=serialPort.readable.getReader();
+    while(true){
+      const {value,done}=await serialReader.read();if(done)break;
+      serialTextBuffer+=decoder.decode(value,{stream:true});
+      let p;
+      while((p=serialTextBuffer.indexOf('\n'))>=0){
+        const line=serialTextBuffer.slice(0,p).replace(/\r$/,'');serialTextBuffer=serialTextBuffer.slice(p+1);serialDispatchLine(line)
+      }
+    }
+  }catch(e){if(serialPort)console.error('Serial read stopped',e)}
+  finally{try{serialReader&&serialReader.releaseLock()}catch(e){}serialReader=null}
+}
+async function serialWrite(data){
+  if(!serialWriter)throw new Error('EH-01 serial port is not connected');
+  await serialWriter.write(data)
+}
+async function serialSendLine(line){await serialWrite(new TextEncoder().encode(line+'\n'))}
+async function disconnectEh01Serial(){
+  serialCancelRequested=true;
+  try{serialReader&&await serialReader.cancel()}catch(e){}
+  try{serialReadTask&&await serialReadTask}catch(e){}
+  try{serialWriter&&serialWriter.releaseLock()}catch(e){}
+  serialWriter=null;
+  try{serialPort&&await serialPort.close()}catch(e){}
+  serialPort=null;serialReadTask=null;serialTextBuffer='';serialLineQueue=[];
+  setSerialStatus('USB SERIAL NOT CONNECTED','');serialRenderUi()
+}
+async function connectEh01Serial(){
+  if(serialPort){await disconnectEh01Serial();return false}
+  if(!('serial' in navigator)){setSerialStatus('WEB SERIAL UNSUPPORTED','error');return false}
+  try{
+    setSerialStatus('SELECT THE TEENSY SERIAL PORT','warn');
+    serialPort=await navigator.serial.requestPort();
+    await serialPort.open({baudRate:115200,bufferSize:65536});
+    serialWriter=serialPort.writable.getWriter();serialReadTask=serialReadLoop();
+    serialLineQueue=[];await serialSendLine('EH01_HELLO');await serialWaitEh01('EH01_READY ',5000);
+    setSerialStatus('EH-01 STORAGE CONNECTED','ok');setFooter('EH-01 USB SERIAL READY');serialRenderUi();return true
+  }catch(e){
+    console.error(e);setSerialStatus(e.name==='NotFoundError'?'PORT SELECTION CANCELLED':'SERIAL CONNECT FAILED · CLOSE SERIAL MONITOR','error');
+    try{serialWriter&&serialWriter.releaseLock()}catch(x){}serialWriter=null;
+    try{serialPort&&await serialPort.close()}catch(x){}serialPort=null;serialRenderUi();return false
+  }
+}
+function crc32(bytes){
+  let crc=0xFFFFFFFF;
+  for(let i=0;i<bytes.length;i++){
+    crc=(crc^bytes[i])>>>0;
+    for(let b=0;b<8;b++)crc=((crc>>>1)^((crc&1)?0xEDB88320:0))>>>0
+  }
+  return (crc^0xFFFFFFFF)>>>0
+}
+async function uploadBankToEh01(){
+  if(serialUploadActive)return;
+  if(!slots.some(s=>s.buffer)){setSerialStatus('LOAD AT LEAST ONE SAMPLE','warn');return}
+  if(!serialPort&&!(await connectEh01Serial()))return;
+  const bank=cleanName($('bankName').value);
+  if(bank==='00_USERREC'){setSerialStatus('00_USERREC IS RESERVED FOR INTERNAL RECORDING','error');return}
+  if(!confirm('Upload and replace EH-01 bank /SAMPLES/'+bank+'? Empty slots will be cleared.'))return;
+
+  serialUploadActive=true;serialCancelRequested=false;setSerialProgress(0);serialRenderUi();
+  try{
+    setSerialStatus('BUILDING EH-01 RAW BANK','warn');setFooter('PROCESSING BANK FOR DIRECT USB UPLOAD');
+    const files=await makeOutputs('raw44100','SAMPLES');
+    const totalBytes=files.reduce((n,f)=>n+f.data.length,0);let sentBytes=0;
+
+    serialLineQueue=[];await serialSendLine('EH01_HELLO');await serialWaitEh01('EH01_READY ',5000);
+    await serialSendLine('EH01_BEGIN '+bank+' '+files.length);await serialWaitEh01('EH01_BANK_READY ',10000);
+
+    for(let fi=0;fi<files.length;fi++){
+      const f=files[fi],crc=crc32(f.data).toString(16).toUpperCase().padStart(8,'0');
+      setSerialStatus('OPENING '+f.name+' · '+fmtBytes(f.data.length),'warn');
+      await serialSendLine('EH01_FILE '+f.name+' '+f.data.length+' '+crc);await serialWaitEh01('EH01_FILE_READY ',10000);
+
+      for(let offset=0;offset<f.data.length;offset+=4096){
+        if(serialCancelRequested){await serialSendLine('EH01_ABORT');await serialWaitLine(l=>l.startsWith('EH01_ABORTED')||l.startsWith('EH01_ERROR '),5000);throw new Error('UPLOAD_CANCELLED')}
+        const chunk=f.data.subarray(offset,Math.min(f.data.length,offset+4096));
+        await serialSendLine('EH01_DATA '+chunk.length);await serialWaitEh01('EH01_DATA_READY ',5000);
+        await serialWrite(chunk);await serialWaitEh01('EH01_CHUNK_OK ',10000);
+        sentBytes+=chunk.length;setSerialProgress(sentBytes/Math.max(1,totalBytes)*100);
+        setSerialStatus('UPLOADING '+f.name+' · '+Math.round((offset+chunk.length)/f.data.length*100)+'%','warn')
+      }
+      await serialWaitEh01('EH01_FILE_OK ',10000)
+    }
+
+    setSerialStatus('INSTALLING BANK','warn');await serialSendLine('EH01_END');await serialWaitEh01('EH01_BANK_OK ',15000);
+    setSerialProgress(100);setSerialStatus('BANK INSTALLED · /SAMPLES/'+bank,'ok');setExport('DIRECT USB UPLOAD COMPLETE','ok');setFooter('EH-01 BANK INSTALLED AND SELECTED')
+  }catch(e){
+    console.error(e);
+    if(e.message==='UPLOAD_CANCELLED')setSerialStatus('UPLOAD CANCELLED','warn');
+    else setSerialStatus('UPLOAD FAILED · '+e.message.toUpperCase(),'error');
+    setFooter('EH-01 USB TRANSFER STOPPED')
+  }finally{serialUploadActive=false;serialCancelRequested=false;serialRenderUi();renderSummary()}
+}
+$('serialConnectBtn').onclick=connectEh01Serial;
+$('serialUploadBtn').onclick=uploadBankToEh01;
+$('serialCancelBtn').onclick=()=>{serialCancelRequested=true;setSerialStatus('CANCELLING AFTER CURRENT 4 KB BLOCK','warn')};
+if('serial' in navigator){
+  navigator.serial.addEventListener?.('disconnect',e=>{if(serialPort&&e.target===serialPort){serialPort=null;serialWriter=null;setSerialStatus('EH-01 DISCONNECTED','error');serialRenderUi()}})
+}
+window.addEventListener('beforeunload',()=>{try{serialReader&&serialReader.cancel()}catch(e){}});
+serialRenderUi();
+
 function processSample(s,rate){
   const b=s.buffer,a=Math.floor(s.start*b.sampleRate),z=Math.ceil(s.end*b.sampleRate),n=Math.max(1,z-a),mono=new Float32Array(n);
   for(let ch=0;ch<b.numberOfChannels;ch++){const d=b.getChannelData(ch);for(let i=0;i<n;i++)mono[i]+=(d[a+i]||0)/b.numberOfChannels}
@@ -1279,11 +1441,11 @@ function wav16(samples,rate){
   wr(0,'RIFF');v.setUint32(4,36+raw.length,true);wr(8,'WAVE');wr(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
   v.setUint32(24,rate,true);v.setUint32(28,rate*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);wr(36,'data');v.setUint32(40,raw.length,true);u.set(raw,44);return u;
 }
-function manifest(){
-  const mode=$('format').value,rate=mode==='wav48000'?48000:44100,ext=mode.startsWith('raw')?'RAW':'WAV';
+function manifest(modeOverride=null,rootOverride=null){
+  const mode=modeOverride||$('format').value,rate=mode==='wav48000'?48000:44100,ext=mode.startsWith('raw')?'RAW':'WAV';
   return{
-    generator:'EH-01 Sample Builder v0.5',generated:new Date().toISOString(),
-    root:cleanName($('rootName').value,'SAMPLES'),bank:cleanName($('bankName').value),
+    generator:'EH-01 Sample Builder v0.6',generated:new Date().toISOString(),
+    root:cleanName(rootOverride||$('rootName').value,'SAMPLES'),bank:cleanName($('bankName').value),
     format:{container:ext,sampleRate:rate,channels:1,bitDepth:16,littleEndian:true},
     midi:{notes:noteMap,names:noteNames},
     slots:slots.map((s,i)=>s.buffer?{
@@ -1297,8 +1459,8 @@ function download(blob,name){
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();
   setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000)
 }
-async function makeOutputs(){
-  const m=manifest(),rate=m.format.sampleRate,ext=m.format.container,files=[];
+async function makeOutputs(modeOverride=null,rootOverride=null){
+  const m=manifest(modeOverride,rootOverride),rate=m.format.sampleRate,ext=m.format.container,files=[];
   for(let i=0;i<8;i++)if(slots[i].buffer){
     setExport('PROCESSING SLOT '+(i+1),'warn');await new Promise(r=>setTimeout(r,0));
     const p=processSample(slots[i],rate),data=ext==='RAW'?pcm16(p):wav16(p,rate);
