@@ -1,1134 +1,545 @@
-<!DOCTYPE html>
-<!DOCTYPE html>
-
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Edgehog Systems - EH-01</title>
-<meta content="EH-01 is a compact experimental sampler synth from Edgehog Systems." name="description"/>
-<link href="images/favicon.png" rel="icon" type="image/png"/>
-<link href="images/favicon.png" rel="apple-touch-icon"/>
-<link as="image" fetchpriority="high" href="images/eh01-synth2.jpg" rel="preload"/>
+<meta name="description" content="EH-01 is a compact experimental sampler synth from Edgehog Systems.">
+<link rel="icon" type="image/png" href="images/favicon.png">
+<link rel="apple-touch-icon" href="images/favicon.png">
 <style>
-    :root {
-      --bg: #f1f2f0;
-      --paper: #fffdf6;
-      --ink: #151515;
-      --muted: #5e6258;
-      --line: #cfd5cb;
-      --orange: #e95a24;
-      --green: #376f5a;
-      --blue: #244a66;
-      --dark: #10110f;
-      --focus-grid: 4cm;
-    }
-
-    * { box-sizing: border-box; }
-    html {
-      scroll-behavior: smooth;
-      overflow-x: hidden;
-    }
-
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--ink);
-      font-family: Arial, Helvetica, sans-serif;
-      letter-spacing: 0;
-      overflow-x: hidden;
-    }
-
-    main,
-    .topbar,
-    footer {
-      width: min(88vw, 1680px);
-      margin-left: auto;
-      margin-right: auto;
-    }
-
-    a { color: inherit; text-decoration: none; }
-
-    .fiducial-overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 45;
-      pointer-events: none;
-      opacity: 0.34;
-      mix-blend-mode: multiply;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='152' height='152' viewBox='0 0 152 152'%3E%3Cg stroke='%23151515' stroke-opacity='0.82' stroke-width='0.55'%3E%3Cline x1='76' y1='62' x2='76' y2='90'/%3E%3Cline x1='62' y1='76' x2='90' y2='76'/%3E%3C/g%3E%3C/svg%3E");
-      background-size: var(--focus-grid) var(--focus-grid);
-      background-position: calc(var(--focus-grid) / 2) calc(var(--focus-grid) / 2);
-      background-repeat: repeat;
-    }
-
-    .editor-bar {
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      max-width: 100vw;
-      overflow: hidden;
-      padding: 10px 14px;
-      background: #111;
-      color: #fff;
-      font-size: 13px;
-      letter-spacing: 0;
-    }
-
-    .editor-bar strong {
-      text-transform: uppercase;
-      letter-spacing: 0;
-      font-size: 12px;
-    }
-
-    .editor-actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-      min-width: 0;
-    }
-
-    .editor-actions button {
-      border: 1px solid #555;
-      background: #222;
-      color: #fff;
-      padding: 8px 10px;
-      border-radius: 999px;
-      cursor: pointer;
-      font-size: 12px;
-      min-width: 0;
-    }
-
-    .editor-actions button:hover { background: #333; }
-
-    body.editing [data-edit] {
-      outline: 1px dashed rgba(227, 95, 35, 0.65);
-      outline-offset: 3px;
-      cursor: text;
-    }
-
-    body.editing [data-edit]:focus {
-      outline: 2px solid var(--orange);
-      background: rgba(255, 253, 246, 0.75);
-    }
-
-    .save-note {
-      color: #bbb;
-      font-size: 12px;
-      line-height: 1.35;
-    }
-
-    .topbar {
-      position: sticky;
-      top: 49px;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 24px;
-      padding: 18px 28px;
-      border-bottom: 1px solid var(--line);
-      background: rgba(255, 253, 246, 0.92);
-      backdrop-filter: blur(10px);
-    }
-
-    .brand {
-      font-size: 14px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0;
-      color: var(--orange);
-    }
-
-    .nav {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      font-size: 13px;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0;
-    }
-
-    .nav a:hover { color: var(--ink); }
-
-    .nav .tool-link {
-      color: var(--orange);
-      font-weight: 700;
-    }
-
-    .nav .tool-link:hover { color: var(--orange); }
-
-    .hero {
-      min-height: 76vh;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .hero-copy {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      min-width: 0;
-      padding: 54px 28px 32px;
-      border-right: 1px solid var(--line);
-      overflow: hidden;
-      background:
-        linear-gradient(90deg, rgba(255, 253, 246, 0.84), rgba(255, 253, 246, 0.62)),
-        url("images/eh01-closeup.jpg") center / cover no-repeat,
-        var(--paper);
-    }
-
-    .hero-copy > div {
-      position: relative;
-      z-index: 1;
-    }
-
-    h1 {
-      margin: 18px 0 14px;
-      max-width: 900px;
-      font-size: 188px;
-      line-height: 0.76;
-      letter-spacing: 0;
-      font-weight: 800;
-      white-space: nowrap;
-    }
-
-    .intro {
-      max-width: 900px;
-      font-size: 42px;
-      line-height: 0.94;
-      letter-spacing: 0;
-      margin: 0 0 42px;
-    }
-
-    .subintro {
-      max-width: 560px;
-      color: var(--muted);
-      font-size: 17px;
-      line-height: 1.45;
-      margin: 0;
-      overflow-wrap: anywhere;
-    }
-
-    .cta-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 38px;
-    }
-
-    .button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 46px;
-      padding: 0 18px;
-      border: 1px solid var(--ink);
-      border-radius: 999px;
-      font-size: 13px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0;
-    }
-
-    .button.primary {
-      background: var(--orange);
-      border-color: var(--orange);
-      color: var(--paper);
-    }
-
-    .button:hover { transform: translateY(-1px); }
-
-
-    .subscribe-modal {
-      position: fixed;
-      inset: 0;
-      z-index: 80;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 22px;
-      background: rgba(16, 17, 15, 0.58);
-    }
-
-    .subscribe-modal.open {
-      display: flex;
-    }
-
-    .subscribe-dialog {
-      position: relative;
-      width: min(94vw, 720px);
-      height: min(82vh, 760px);
-      border: 1px solid var(--ink);
-      background: var(--paper);
-      box-shadow: 18px 18px 0 rgba(21, 21, 21, 0.18);
-      overflow: hidden;
-    }
-
-    .subscribe-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 12px 14px;
-      border-bottom: 1px solid var(--line);
-      background: var(--paper);
-    }
-
-    .subscribe-title {
-      font-size: 13px;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-
-    .subscribe-close {
-      border: 1px solid var(--ink);
-      background: transparent;
-      color: var(--ink);
-      width: 34px;
-      height: 34px;
-      border-radius: 999px;
-      cursor: pointer;
-      font-size: 22px;
-      line-height: 1;
-    }
-
-    .subscribe-frame {
-      display: block;
-      width: 100%;
-      height: calc(100% - 59px);
-      border: 0;
-      background: #fff;
-    }
-
-    .subscribe-fallback {
-      position: absolute;
-      left: 14px;
-      right: 14px;
-      bottom: 14px;
-      padding: 10px 12px;
-      border: 1px solid var(--line);
-      background: rgba(255, 253, 246, 0.92);
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.35;
-    }
-
-    .subscribe-fallback a {
-      color: var(--ink);
-      font-weight: 700;
-      text-decoration: underline;
-    }
-
-    .waitlist-title {
-      margin: 30px 0 0;
-      max-width: 920px;
-      font-size: 48px;
-      line-height: 0.92;
-      font-weight: 800;
-      text-transform: uppercase;
-      color: var(--orange);
-    }
-    .hero-visual {
-      position: relative;
-      min-width: 0;
-      min-height: 100%;
-      overflow: hidden;
-      background: #f1f2f0;
-    }
-
-    .hero-synth-image {
-      display: block;
-      width: 100%;
-      height: 100%;
-      min-height: 100%;
-      object-fit: cover;
-      object-position: center;
-    }
-
-    .section {
-      padding: 28px;
-      border-bottom: 1px solid var(--line);
-      background: var(--paper);
-    }
-
-    .section-head {
-      display: flex;
-      justify-content: space-between;
-      gap: 24px;
-      align-items: end;
-      margin-bottom: 28px;
-    }
-
-    .product-story .section-head {
-      display: block;
-    }
-
-    .product-story .section-head .subintro {
-      max-width: 1180px;
-      margin-top: 18px;
-      font-size: 24px;
-      line-height: 1.24;
-      color: var(--ink);
-    }
-
-    .quote-credit {
-      color: var(--muted);
-      white-space: nowrap;
-    }
-
-    .label {
-      color: var(--muted);
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0;
-    }
-
-    h2 {
-      margin: 10px 0 0;
-      font-size: 72px;
-      line-height: 0.96;
-      letter-spacing: 0;
-    }
-
-    .grid-3 {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      border-top: 1px solid var(--line);
-      border-left: 1px solid var(--line);
-    }
-
-    .feature {
-      min-height: 250px;
-      padding: 22px;
-      border-right: 1px solid var(--line);
-      border-bottom: 1px solid var(--line);
-      background: rgba(255, 253, 246, 0.48);
-    }
-
-    .feature-number {
-      font-size: 12px;
-      color: var(--muted);
-    }
-    .feature-image {
-      width: 100%;
-      height: 118px;
-      margin: 34px 0 28px;
-      border: 1px solid var(--line);
-      background: var(--paper);
-      object-fit: cover;
-      object-position: center;
-      display: block;
-    }
-
-    .feature h3 {
-      margin: 0 0 10px;
-      font-size: 25px;
-      letter-spacing: 0;
-    }
-
-    .feature p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.45;
-      font-size: 15px;
-    }
-
-
-    .video-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 18px;
-    }
-
-    .video-card {
-      border: 1px solid var(--line);
-      background: rgba(255, 253, 246, 0.48);
-      padding: 18px;
-    }
-
-    .video-frame {
-      position: relative;
-      aspect-ratio: 16 / 9;
-      border: 1px solid var(--ink);
-      background: #111;
-      overflow: hidden;
-    }
-
-    .video-frame iframe {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      border: 0;
-    }
-
-    .video-card h3 {
-      margin: 16px 0 8px;
-      font-size: 24px;
-    }
-
-    .video-card p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.45;
-      font-size: 15px;
-    }
-
-
-    .video-grid-small {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 12px;
-      margin-top: 18px;
-    }
-
-    .video-card.small {
-      padding: 12px;
-    }
-
-    .video-card.small h3 {
-      margin: 10px 0 0;
-      font-size: 15px;
-      line-height: 1.2;
-    }
-    .repeat-hero {
-      min-height: 300px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .repeat-copy {
-      position: relative;
-      min-width: 0;
-      padding: 22px 28px 20px;
-      border-right: 1px solid var(--line);
-      overflow: hidden;
-      background:
-        linear-gradient(90deg, rgba(255, 253, 246, 0.84), rgba(255, 253, 246, 0.62)),
-        url("images/eh01-synthL.jpg") center / cover no-repeat,
-        var(--paper);
-    }
-
-    .repeat-copy > div {
-      position: relative;
-      z-index: 1;
-    }
-
-    .repeat-copy h2 {
-      max-width: 900px;
-      margin: 0 0 16px;
-      font-size: 116px;
-      line-height: 0.82;
-      white-space: nowrap;
-    }
-
-    .repeat-intro {
-      max-width: 760px;
-      margin: 0 0 18px;
-      font-size: 32px;
-      line-height: 0.98;
-    }
-
-    .repeat-copy .subintro + .subintro {
-      margin-top: 14px;
-    }
-
-    .sample-builder-section .repeat-copy h2 {
-      font-size: 88px;
-      white-space: normal;
-    }
-
-    .repeat-media {
-      min-width: 0;
-      min-height: 100%;
-      overflow: hidden;
-      background: #f1f2f0;
-    }
-
-    .repeat-media img {
-      display: block;
-      width: 100%;
-      height: 100%;
-      min-height: 100%;
-      object-fit: cover;
-      object-position: center;
-    }
-    .split {
-      display: grid;
-      grid-template-columns: 0.9fr 1.1fr;
-      border-bottom: 1px solid var(--line);
-      background: var(--paper);
-    }
-
-    .split > div { padding: 28px; }
-    .split > div:first-child { border-right: 1px solid var(--line); }
-
-    .big-quote {
-      margin: 0;
-      font-size: 64px;
-      line-height: 1;
-      letter-spacing: 0;
-      color: var(--orange);
-    }
-
-    .big-quote .quote-break {
-      display: block;
-      margin-top: 18px;
-    }
-
-    .spec-list {
-      display: grid;
-      gap: 0;
-      border-top: 1px solid var(--line);
-    }
-
-    .spec-row {
-      display: grid;
-      grid-template-columns: 160px 1fr;
-      gap: 20px;
-      padding: 18px 0;
-      border-bottom: 1px solid var(--line);
-      font-size: 15px;
-    }
-
-    .spec-row span:first-child {
-      color: var(--muted);
-      text-transform: uppercase;
-      font-size: 12px;
-      letter-spacing: 0;
-    }
-
-    .dark-band {
-      background: var(--dark);
-      color: var(--paper);
-      padding: 42px 28px;
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 28px;
-      align-items: center;
-    }
-
-    .dark-band h2 {
-      margin: 0;
-      max-width: 920px;
-    }
-
-    .dark-band .button {
-      border-color: var(--orange);
-      background: var(--orange);
-      color: var(--paper);
-      white-space: nowrap;
-    }
-
-    footer {
-      padding: 22px 28px 40px;
-      display: flex;
-      justify-content: space-between;
-      gap: 20px;
-      color: var(--muted);
-      font-size: 13px;
-      background: var(--paper);
-    }
-
-
-    .product-story-grid {
-      display: grid;
-      grid-template-columns: 0.74fr 1.26fr;
-      gap: 28px;
-      align-items: start;
-      border-top: 1px solid var(--line);
-      padding-top: 28px;
-    }
-
-    .product-copy {
-      border: 1px solid var(--line);
-      background: rgba(255, 253, 246, 0.48);
-      padding: 24px;
-      min-height: 100%;
-    }
-
-    .product-copy h3 {
-      margin: 0 0 16px;
-      font-size: 34px;
-      line-height: 1;
-      letter-spacing: 0;
-    }
-
-    .product-copy p {
-      margin: 0 0 16px;
-      color: var(--muted);
-      line-height: 1.5;
-      font-size: 16px;
-    }
-
-    .product-copy p:last-child { margin-bottom: 0; }
-
-    .product-shot-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 1px;
-      background: var(--line);
-    }
-
-    .product-shot {
-      margin: 0;
-      background: var(--paper);
-      padding: 0;
-      overflow: hidden;
-      cursor: zoom-in;
-    }
-
-    .product-shot img {
-      display: block;
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      object-fit: cover;
-      object-position: center;
-      background:
-        linear-gradient(135deg, rgba(55, 111, 90, 0.12), rgba(233, 90, 36, 0.12)),
-        var(--paper);
-    }
-
-    .product-lightbox {
-      position: fixed;
-      inset: 0;
-      z-index: 90;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 28px;
-      background: rgba(16, 17, 15, 0.78);
-    }
-
-    .product-lightbox.open {
-      display: flex;
-    }
-
-    .product-lightbox img {
-      display: block;
-      max-width: min(92vw, 1400px);
-      max-height: 86vh;
-      width: auto;
-      height: auto;
-      border: 1px solid var(--line);
-      background: var(--paper);
-      box-shadow: 18px 18px 0 rgba(0, 0, 0, 0.24);
-    }
-
-    .product-lightbox-close {
-      position: absolute;
-      top: 18px;
-      right: 18px;
-      width: 42px;
-      height: 42px;
-      border: 1px solid var(--paper);
-      border-radius: 999px;
-      background: rgba(16, 17, 15, 0.38);
-      color: var(--paper);
-      font-size: 28px;
-      line-height: 1;
-      cursor: pointer;
-    }
-
-    .large-image-stack {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 1px;
-      width: 100%;
-      margin: 0;
-      background: var(--paper);
-      border-top: 1px solid var(--paper);
-    }
-
-    .large-image-panel {
-      margin: 0;
-      background: var(--paper);
-      cursor: zoom-in;
-      overflow: hidden;
-    }
-
-    .large-image-panel img {
-      display: block;
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      object-fit: cover;
-      object-position: center;
-      background:
-        linear-gradient(135deg, rgba(55, 111, 90, 0.12), rgba(233, 90, 36, 0.12)),
-        var(--paper);
-    }
-
-    .about-grid {
-      display: grid;
-      grid-template-columns: 1.1fr 0.9fr;
-      gap: 28px;
-      align-items: start;
-      border-top: 1px solid var(--line);
-      padding-top: 28px;
-    }
-
-    .about-image {
-      margin: 0;
-      background: var(--paper);
-      cursor: zoom-in;
-      overflow: hidden;
-    }
-
-    .about-image img {
-      display: block;
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      object-fit: cover;
-      object-position: center;
-      background:
-        linear-gradient(135deg, rgba(55, 111, 90, 0.12), rgba(233, 90, 36, 0.12)),
-        var(--paper);
-    }
-
-    .about-copy {
-      border: 1px solid var(--line);
-      background: rgba(255, 253, 246, 0.48);
-      padding: 24px;
-      min-height: 100%;
-    }
-
-    .about-copy h3 {
-      margin: 0 0 16px;
-      font-size: 34px;
-      line-height: 1;
-      letter-spacing: 0;
-    }
-
-    .about-copy p {
-      margin: 0 0 16px;
-      color: var(--muted);
-      line-height: 1.5;
-      font-size: 16px;
-    }
-
-    .about-copy p:last-child { margin-bottom: 0; }
-
-    @media (max-width: 1100px) {
-      h1 { font-size: 136px; }
-      h2 { font-size: 58px; }
-      .intro { font-size: 36px; }
-      .waitlist-title { font-size: 36px; }
-      .big-quote { font-size: 52px; }
-    }
-
-    @media (max-width: 900px) {
-      main,
-      .topbar,
-      footer { width: 100%; }
-      .editor-bar { position: static; align-items: flex-start; flex-direction: column; }
-      .topbar { top: 0; }
-      .hero, .repeat-hero, .split, .dark-band, .product-story-grid, .about-grid { grid-template-columns: 1fr; }
-      .hero-copy, .repeat-copy, .split > div:first-child { border-right: 0; }
-      .hero-visual, .repeat-media { min-height: 520px; border-top: 1px solid var(--line); }
-      .hero-copy { order: 2; }
-      .hero-visual { order: 1; border-top: 0; border-bottom: 1px solid var(--line); }
-      h1 { font-size: 92px; white-space: normal; }
-      h2 { font-size: 46px; }
-      .repeat-copy h2 { font-size: 76px; white-space: normal; }
-      .sample-builder-section .repeat-copy h2 { font-size: 64px; }
-      .repeat-intro { font-size: 30px; }
-      .intro { font-size: 32px; }
-      .big-quote { font-size: 42px; }
-      .grid-3 { grid-template-columns: 1fr; }
-      .video-grid { grid-template-columns: 1fr; }
-      .product-shot-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .large-image-stack { width: 100%; }
-      .nav { display: none; }
-      .section-head { display: block; }
-      .spec-row { grid-template-columns: 1fr; gap: 8px; }
-      footer { flex-direction: column; }
-    }
-
-    @media (max-width: 560px) {
-      .editor-bar {
-        width: 100vw;
-      }
-      .editor-bar > div:first-child,
-      .editor-actions {
-        width: 100%;
-        min-width: 0;
-      }
-      .save-note { display: block; margin-top: 4px; }
-      .editor-actions {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      }
-      .editor-actions button {
-        width: 100%;
-        padding: 8px 6px;
-        white-space: normal;
-        overflow: hidden;
-      }
-      .editor-actions button:last-child { grid-column: 1 / -1; }
-      .topbar, .section, .split > div, .dark-band, footer { padding-left: 18px; padding-right: 18px; }
-      .hero-copy, .repeat-copy { padding: 36px 18px 28px; }
-      .hero-visual, .repeat-media { min-height: 460px; padding: 0; }
-      h1 { font-size: 68px; white-space: normal; }
-      h2 { font-size: 38px; }
-      .repeat-copy h2 { font-size: 56px; white-space: normal; }
-      .sample-builder-section .repeat-copy h2 { font-size: 44px; }
-      .repeat-intro { font-size: 26px; }
-      .intro { font-size: 28px; }
-      .waitlist-title { font-size: 26px; }
-      .big-quote { font-size: 34px; }
-      .product-shot-grid { grid-template-columns: 1fr; }
-      .large-image-stack { grid-template-columns: 1fr; }
-      .cta-row {
-        flex-direction: column;
-        align-items: stretch;
-      }
-      .cta-row .button { width: 100%; padding: 0 14px; font-size: 12px; }
-    }
-  
-
-/* Public launch cleanup */
-.editor-bar { display: none !important; }
-.topbar { top: 0 !important; }
-body.editing [data-edit], body.editing [data-edit]:focus { outline: none !important; background: transparent !important; }
+:root {
+  --bg: #ececeb;
+  --paper: #f7f7f5;
+  --ink: #343536;
+  --muted: #6b6c6c;
+  --line: #d2d2d0;
+  --dark: #303235;
+  --orange: #e7652d;
+  --soft: #e4e4e2;
+}
+
+* { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background:
+    linear-gradient(rgba(52, 53, 54, 0.035) 1px, transparent 1px) 0 0 / 72px 72px,
+    linear-gradient(90deg, rgba(52, 53, 54, 0.035) 1px, transparent 1px) 0 0 / 72px 72px,
+    var(--bg);
+  color: var(--ink);
+  font-family: Arial, Helvetica, sans-serif;
+  letter-spacing: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.page {
+  width: min(1120px, calc(100vw - 32px));
+  margin: 0 auto;
+  background: var(--paper);
+  box-shadow: 0 0 0 1px rgba(52, 53, 54, 0.08);
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 32px;
+  padding: 7px 18px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(247, 247, 245, 0.92);
+  backdrop-filter: blur(10px);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.brand {
+  color: var(--orange);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--muted);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.nav a:hover,
+.nav .tool-link {
+  color: var(--orange);
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 420px;
+  border-bottom: 1px solid var(--line);
+}
+
+.hero-copy {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 24px;
+  min-width: 0;
+  padding: 46px 22px 34px;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, rgba(247, 247, 245, 0.84), rgba(247, 247, 245, 0.58)),
+    url("images/eh01-closeup.jpg") center / cover no-repeat,
+    var(--paper);
+}
+
+.hero-copy h1 {
+  margin: 0;
+  font-size: 116px;
+  line-height: 0.78;
+  letter-spacing: -2px;
+  font-weight: 900;
+}
+
+.hero-copy .intro {
+  max-width: 560px;
+  margin: 0;
+  font-size: 25px;
+  line-height: 0.98;
+}
+
+.hero-copy .body {
+  max-width: 550px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.hero-art {
+  min-width: 0;
+  background: #aaa;
+  border-left: 1px solid var(--line);
+}
+
+.hero-art img,
+.full-bleed img,
+.image-panel img,
+.about-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hero-art img {
+  min-height: 420px;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.button.primary {
+  border-color: var(--orange);
+  background: var(--orange);
+  color: #fff;
+}
+
+.kick {
+  color: var(--orange);
+  font-size: 29px;
+  line-height: 0.92;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.quote-band {
+  padding: 20px 22px 22px;
+  background: var(--dark);
+  color: #fff;
+  border-bottom: 1px solid var(--ink);
+}
+
+.quote-band h2 {
+  max-width: 980px;
+  margin: 0 0 12px;
+  font-size: 43px;
+  line-height: 0.98;
+  letter-spacing: -1px;
+}
+
+.quote-band p {
+  max-width: 920px;
+  margin: 0;
+  color: #e0e0dc;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.full-bleed {
+  background: #cfd0d2;
+  border-bottom: 1px solid var(--line);
+}
+
+.full-bleed img {
+  aspect-ratio: 4 / 1.34;
+}
+
+.split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid var(--line);
+}
+
+.text-panel {
+  display: grid;
+  place-items: center;
+  min-height: 330px;
+  padding: 38px 46px;
+  text-align: center;
+}
+
+.text-panel h2,
+.section-title {
+  margin: 0 0 16px;
+  font-size: 28px;
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+
+.text-panel p {
+  max-width: 420px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1.32;
+  letter-spacing: 1.2px;
+}
+
+.image-panel {
+  min-height: 330px;
+  overflow: hidden;
+}
+
+.orange-panel {
+  background: var(--orange);
+  color: #fff;
+}
+
+.orange-panel h2 {
+  color: #fff;
+}
+
+.orange-panel img {
+  object-position: center;
+  mix-blend-mode: normal;
+  opacity: 1;
+}
+
+.studio-panel {
+  background: #bdbab3;
+  border-bottom: 1px solid var(--line);
+}
+
+.studio-panel img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.about,
+.videos {
+  padding: 28px 22px;
+  border-bottom: 1px solid var(--line);
+}
+
+.section-kicker {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.section-title {
+  font-size: 43px;
+  letter-spacing: -1px;
+}
+
+.about-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 18px;
+  align-items: stretch;
+}
+
+.about-image,
+.about-copy,
+.video-card {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.48);
+}
+
+.about-image {
+  min-height: 300px;
+  overflow: hidden;
+}
+
+.about-copy {
+  padding: 24px;
+}
+
+.about-copy h3 {
+  margin: 0 0 14px;
+  font-size: 22px;
+}
+
+.about-copy p {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.video-head {
+  display: grid;
+  grid-template-columns: 1fr 0.8fr;
+  gap: 22px;
+  align-items: end;
+  margin-bottom: 22px;
+}
+
+.video-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.video-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+}
+
+.video-frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: #111;
+  overflow: hidden;
+}
+
+.video-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.video-card h3 {
+  margin: 14px 16px 6px;
+  font-size: 18px;
+}
+
+.video-card p {
+  margin: 0 16px 16px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 22px 28px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+@media (max-width: 880px) {
+  .page { width: 100%; }
+  .topbar { align-items: flex-start; flex-direction: column; }
+  .nav { flex-wrap: wrap; gap: 10px 14px; white-space: normal; }
+  .hero,
+  .split,
+  .about-grid,
+  .video-head,
+  .video-grid { grid-template-columns: 1fr; }
+  .hero-art { border-left: 0; border-top: 1px solid var(--line); }
+  .hero-copy h1 { font-size: 82px; }
+  .quote-band h2,
+  .section-title { font-size: 34px; }
+  .full-bleed img { aspect-ratio: 16 / 9; }
+}
+
+@media (max-width: 540px) {
+  .hero-copy { padding: 34px 18px 28px; }
+  .hero-copy h1 { font-size: 64px; }
+  .hero-copy .intro { font-size: 21px; }
+  .kick { font-size: 23px; }
+  .quote-band h2,
+  .section-title { font-size: 29px; }
+  .text-panel { min-height: 260px; padding: 28px 22px; }
+  .text-panel p { font-size: 15px; line-height: 1.34; letter-spacing: 0.6px; }
+  .about,
+  .videos { padding: 24px 18px; }
+}
 </style>
 </head>
 <body>
-<div aria-hidden="true" class="fiducial-overlay"></div>
-
+<div class="page">
 <header class="topbar">
 <a class="brand" href="#top">Edgehog Systems</a>
-<nav aria-label="Main navigation" class="nav">
+<nav class="nav" aria-label="Main navigation">
 <a href="#eh01">EH-01</a>
-<a href="#product-shots">Photos</a>
+<a href="#photos">Photos</a>
 <a href="#features">Features</a>
 <a href="#specs">Specs</a>
 <a class="tool-link" href="EH01_MIDI_Console.html">MIDI Console</a>
 <a class="tool-link" href="EH01_Sample_Builder.html">Sample Builder</a>
 <a class="tool-link" href="EH01_Tape.html">Tape Recorder</a>
 <a href="#video">Demos</a>
-<a href="/games/mirror-beam/">Game</a>
+<a href="../game/games/mirror-beam/">Game</a>
 <a href="#signup">Kickstarter</a>
 </nav>
 </header>
+
 <main id="top">
 <section class="hero" id="eh01">
 <div class="hero-copy">
 <div>
 <h1>EH-01</h1>
-<p class="intro">A compact experimental sampler synth.<br/>No menus. No LEDs. No screen.<br/>Just control.</p>
-<p class="subintro">Multiple synth systems, SD + memory playback, glitch, loop, morph, record and repeat in a small hands-on instrument built for immediate noise, rhythm and strange little moments.</p>
-<div class="cta-row">
+<p class="intro">A compact experimental sampler synth.<br>No menus. No LEDs. No screen.<br>Just control.</p>
+</div>
+<p class="body">Multiple synth systems, SD + memory playback, glitch, loop, morph, record and repeat in a small hands-on instrument built for immediate noise, rhythm and strange little moments.</p>
+<div class="button-row">
 <a class="button primary" href="https://www.kickstarter.com/projects/1397757174/eh-01-a-compact-experimental-sampler-synth" rel="noopener" target="_blank">Follow on Kickstarter</a>
 <a class="button" href="#features">See features</a>
 </div>
-<div class="waitlist-title">NOW ON KICKSTARTER JOIN FOR EARLY BIRD DEALS</div>
+<div class="kick" id="signup">Now on Kickstarter join for early bird deals</div>
 </div>
-</div>
-<div class="hero-visual">
-<img alt="EH-01 synth Kickstarter launch image" class="hero-synth-image" decoding="async" fetchpriority="high" src="images/eh01-synth2.jpg"/>
+<div class="hero-art">
+<img src="Grey%20cover%202%20copy.jpg" alt="EH-01 plug and play product render">
 </div>
 </section>
-<section class="section product-story" id="product-shots">
-<div class="section-head">
-<div>
-<div class="label">Product study</div>
+
+<section class="quote-band" id="photos">
 <h2>And the winner for the coolest-looking synth of 2026 goes to Edgehog EH-01.</h2>
-</div>
-<p class="subintro">It&rsquo;s got a multimode sound generator, synth engine, drum machine, sample playback, and the cyberpunkiest styling this side of Kaneda&rsquo;s bike. <span class="quote-credit">Quote: gearnews.com</span></p>
-</div>
-<div class="product-story-grid">
-<div class="product-copy">
-<h3>EH-01 early access</h3>
-<p>EH-01 is now on Kickstarter, with limited early units planned from <strong>US$179</strong>. Expected retail pricing is around <strong>US$249</strong>.</p>
-<p>To support the project and reserve your chance to own an <strong>Edgehog EH-01</strong>, follow the campaign on Kickstarter for release dates, production updates and launch news.</p>
-<p>Kickstarter followers will get launch updates, early-bird pricing and limited pre-release unit information while stock lasts.</p>
-<p>Follow on Kickstarter for early bird deals. Prices shown in USD. Final Kickstarter pricing may vary slightly.</p>
-</div>
-<div class="product-shot-grid">
-<figure class="product-shot"><img alt="EH-01 product shot 01" src="images/img1.jpg"/></figure>
-<figure class="product-shot"><img alt="EH-01 product shot 02" src="images/img2.jpg"/></figure>
-<figure class="product-shot"><img alt="EH-01 product shot 03" src="images/img3.jpg"/></figure>
-<figure class="product-shot"><img alt="EH-01 product shot 04" src="images/img4.jpg"/></figure>
-<figure class="product-shot"><img alt="EH-01 product shot 05" src="images/img5.jpg"/></figure>
-<figure class="product-shot"><img alt="EH-01 product shot 06" src="images/img6.jpg"/></figure>
-</div>
-</div>
+<p>It has a multimode sound generator, synth engine, drum machine, sample playback, and the cyberpunkiest styling this side of Kaneda's bike. Quote: gearnews.com</p>
 </section>
-<section class="section" id="features">
-<div class="section-head">
-<div>
-<div class="label">What it does</div>
-<h2>Small box. Direct controls. Weird results.</h2>
-</div>
-<p class="subintro">Built around immediacy: buttons, knobs, samples, synth voices, loops and performance accidents that are actually useful.</p>
-</div>
-<div class="grid-3">
-<article class="feature"><div class="feature-number">01</div><img alt="EH-01 filter detail" class="feature-image" src="images/small filter.jpg"/><h3>Memory samples</h3><p>Fast onboard sample sets for drums, vocal textures, glitches and one-shot fragments.</p></article>
-<article class="feature"><div class="feature-number">02</div><img alt="EH-01 SD playback detail" class="feature-image" src="images/small sd.jpg"/><h3>SD playback</h3><p>Stream longer files from SD, hold loops, freeze moments and turn samples into playable material.</p></article>
-<article class="feature"><div class="feature-number">03</div><img alt="EH-01 synth detail" class="feature-image" src="images/small synth.jpg"/><h3>Synth engines</h3><p>Polyphonic digital synthesis with filter, envelopes and modulation and a voice-style formant synth engine, all under physical control.</p></article>
-<article class="feature"><div class="feature-number">04</div><img alt="EH-01 USB MIDI detail" class="feature-image" src="images/small usb.jpg"/><h3>USB MIDI</h3><p>Send notes, receive notes, map controls and use EH-01 with a DAW or browser companion tool.</p></article>
-<article class="feature"><div class="feature-number">05</div><img alt="EH-01 browser companion detail" class="feature-image" src="images/small browser.jpg"/><h3>Local browser midi console</h3><p>The EH-01 includes an offline Web MIDI console that turns a browser into a deeper control surface and sequencer. Over USB MIDI, it provides live sliders, note triggering, MIDI clock, preset storage, pattern saving, scene recall, song chaining, scale controls, and an assignable XY pad.</p></article>
-<article class="feature"><div class="feature-number">06</div><img alt="EH-01 build detail" class="feature-image" src="images/small make.jpg"/><h3>Make it yours</h3><p>EH-01 is built to be customised. Swap knobs, change keycaps, experiment with colours, and use the included 3D-printable part files to make the instrument feel like your own.</p></article>
-</div>
+
+<section class="full-bleed" id="features">
+<img src="Grey%20cover%20wide%20copy.jpg" alt="EH-01 feature map and included SD package">
 </section>
+
 <section class="split" id="specs">
-<div><p class="big-quote">All the clever bits hiding under the plastic.<span class="quote-break">A look at the tech</span></p></div>
+<div class="text-panel">
 <div>
-<div class="spec-list">
-<div class="spec-row"><span>Platform</span><span>Teensy 4.1 based digital audio system</span></div>
-<div class="spec-row"><span>Audio</span><span>44.1 kHz stereo output via SGTL5000 audio codec</span></div>
-<div class="spec-row"><span>Voices</span><span>Polyphonic synth engine, Formant voice engine, plus memory and SD sample modes</span></div>
-<div class="spec-row"><span>Control</span><span>Hands-on knobs and mechanical key switches</span></div>
-<div class="spec-row"><span>Status</span><span>Prototype / pre-release development</span></div>
+<h2>Powerful Hardware</h2>
+<p>At the heart of the instrument is a Teensy 4.1, a high-speed 32-bit ARM Cortex-M7 processor running at hundreds of megahertz, paired with a dedicated stereo audio codec for true 44.1 kHz digital audio output.</p>
+</div>
+</div>
+<div class="image-panel">
+<img src="images/IMG_03132%20copy.jpg" alt="EH-01 hardware on a desk">
+</div>
+</section>
+
+<section class="split">
+<div class="image-panel orange-panel">
+<img src="images/ChatGPT%20Image%20Apr%2029,%202026,%2011_43_57%20AM%20copy.jpg" alt="EH-01 custom orange modder render">
+</div>
+<div class="text-panel">
+<div>
+<h2>We Promote Modding</h2>
+<p>Whether you want to alter the EH-01 in appearance or behaviour, we give you the options. Print your own parts, try different knobs and buttons, or write your own code and make your own audio engine.</p>
 </div>
 </div>
 </section>
-<section class="repeat-hero" id="midi-console">
-<div class="repeat-copy">
-<div>
-<h2>MIDI Console.</h2>
-<p class="repeat-intro">The EH-01 includes an offline Web MIDI console that turns a browser into a deeper control surface and sequencer.</p>
-<p class="subintro">The sequencer supports 32 steps, velocity, probability, pattern variations, smart mutate, motion sequencing, and per-step CC locks. This allows notes and parameter changes to be sequenced together, giving the EH-01 browser-assisted parameter-lock behaviour in a compact, local, no-install interface.</p>
-<div class="cta-row">
-<a class="button primary" href="EH01_MIDI_Console.html">Open MIDI console</a>
-</div>
-</div>
-</div>
-<div class="repeat-media">
-<img alt="EH-01 synth detail" src="images/eh01-synthR2.jpg"/>
-</div>
+
+<section class="studio-panel">
+<img src="Grey%20cover%20wide%20studio%20copy.jpg" alt="EH-01 Studio with MIDI sequencer, sample builder and recording suite">
 </section>
-<section class="repeat-hero sample-builder-section" id="sample-builder">
-<div class="repeat-copy">
-<div>
-<h2>EH-01 Sample Builder</h2>
-<p class="repeat-intro">A simple browser-based tool for creating and managing EH-01 sample banks.</p>
-<p class="subintro">Load, record, trim and shape sounds directly in the browser, then export them in the correct EH-01 format with the right file names and folder structure. The Sample Builder also includes waveform editing, normalisation, noise reduction, pitch and filter controls, echo, drive and direct MIDI audition.</p>
-<p class="subintro">Everything runs locally, so your audio is not uploaded to a server. No extra software, no third-party converters, and no menu-diving on the hardware.</p>
-<div class="cta-row">
-<a class="button primary" href="EH01_Sample_Builder.html">Open Sample Builder</a>
-</div>
-</div>
-</div>
-<div class="repeat-media">
-<img alt="EH-01 Sample Builder browser tool" src="samplex.jpg"/>
-</div>
-</section>
-<section class="section large-images" id="large-product-shots">
-<div class="section-head">
-<div>
-<div class="label">Blueprint views</div>
-<h2>Schematic paths.</h2>
-</div>
-<p class="subintro">Blueprint-style views of EH-01's sound systems: voice flow, sample routing, control mappings, modulation paths and performance logic.</p>
-</div>
-<div class="large-image-stack">
-<figure class="large-image-panel"><img alt="EH-01 large product shot 01" src="images/Aa1.jpg"/></figure>
-<figure class="large-image-panel"><img alt="EH-01 large product shot 02" src="images/Aa2.jpg"/></figure>
-<figure class="large-image-panel"><img alt="EH-01 large product shot 03" src="images/Aa3.jpg"/></figure>
-</div>
-</section>
-<section class="section about-section" id="about">
-<div class="section-head">
-<div>
-<div class="label">About</div>
-<h2>About me.</h2>
-</div>
-</div>
+
+<section class="about" id="about">
+<p class="section-kicker">About</p>
+<h2 class="section-title">About me.</h2>
 <div class="about-grid">
-<figure class="about-image"><img alt="About Edgehog Systems" src="images/about.png"/></figure>
+<figure class="about-image">
+<img src="images/about.png" alt="About Edgehog Systems">
+</figure>
 <div class="about-copy">
 <h3>Designed, built and tested by hand.</h3>
-<p>Hi, my name is Leo Rolph. I’m a designer working from a small home studio in Fremantle, Western Australia. With a strong background in graphic and product design, I’ve always had a small obsession with electronics, synths and sound generation.</p>
+<p>Hi, my name is Leo Rolph. I am a designer working from a small home studio in Fremantle, Western Australia. With a strong background in graphic and product design, I have always had a small obsession with electronics, synths and sound generation.</p>
 <p>EH-01 is the result of multiple years of experimentation, many synth prototypes and a long string of design choices. It did not start as a commercial product. It started as an instrument I wanted for myself: small, capable, non-standard, immediate and built around several different sound systems I could use for my own sound generation.</p>
 <p>The final EH-01 is an attempt to give other people the same kind of hands-on joy I get from playing with it.</p>
 </div>
 </div>
 </section>
-<div class="product-lightbox" id="productLightbox" aria-hidden="true">
-<button class="product-lightbox-close" type="button" aria-label="Close product image">×</button>
-<img alt="" id="productLightboxImage"/>
-</div>
-<section class="section" id="video">
-<div class="section-head">
+
+<section class="videos" id="video">
+<div class="video-head">
 <div>
-<div class="label">Watch it move</div>
-<h2>Demos from the bench.</h2>
+<p class="section-kicker">Watch it move</p>
+<h2 class="section-title">Demos from the bench.</h2>
 </div>
-<p class="subintro">Two quick looks at EH-01 in motion: hands-on controls, sample behavior and the rough edges that make it feel alive.</p>
+<p>Two quick looks at EH-01 in motion: hands-on controls, sample behaviour and the rough edges that make it feel alive.</p>
 </div>
 <div class="video-grid">
 <article class="video-card">
 <div class="video-frame">
-<iframe allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen="" referrerpolicy="strict-origin-when-cross-origin" src="https://www.youtube.com/embed/9Gr33cfCUcc?rel=0&amp;modestbranding=1&amp;playsinline=1&amp;origin=https://edgehog.beehiiv.com" title="EH-01 demo video 1"></iframe>
+<iframe src="https://www.youtube.com/embed/9Gr33cfCUcc?rel=0&amp;modestbranding=1&amp;playsinline=1" title="EH-01 demo video 1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 </div>
 <h3>MIDI sequencer console</h3>
 <p>A first look at the instrument responding to MIDI control.</p>
 </article>
 <article class="video-card">
 <div class="video-frame">
-<iframe allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen="" referrerpolicy="strict-origin-when-cross-origin" src="https://www.youtube.com/embed/e-IluZPqfjA?rel=0&amp;modestbranding=1&amp;playsinline=1&amp;origin=https://edgehog.beehiiv.com" title="EH-01 demo video 2"></iframe>
+<iframe src="https://www.youtube.com/embed/e-IluZPqfjA?rel=0&amp;modestbranding=1&amp;playsinline=1" title="EH-01 demo video 2" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 </div>
 <h3>Sound fragments</h3>
 <p>More texture, rhythm and raw sample behaviour from the current build.</p>
 </article>
 </div>
 </section>
-<section class="dark-band" id="signup">
-<h2>Follow EH-01 on Kickstarter for early bird deals.</h2>
-<a class="button" href="https://www.kickstarter.com/projects/1397757174/eh-01-a-compact-experimental-sampler-synth" rel="noopener" target="_blank">Follow on Kickstarter</a>
-</section>
 </main>
+
 <footer>
 <span>(c) 2026 Edgehog Systems</span>
 <span>EH-01 / experimental sampler synth / Perth, Australia</span>
 </footer>
-<script>
-    const productLightbox = document.getElementById("productLightbox");
-    const productLightboxImage = document.getElementById("productLightboxImage");
-    const productLightboxClose = document.querySelector(".product-lightbox-close");
-
-    function openProductLightbox(image) {
-      productLightboxImage.src = image.src;
-      productLightboxImage.alt = image.alt;
-      productLightbox.classList.add("open");
-      productLightbox.setAttribute("aria-hidden", "false");
-      document.body.style.overflow = "hidden";
-    }
-
-    function closeProductLightbox() {
-      productLightbox.classList.remove("open");
-      productLightbox.setAttribute("aria-hidden", "true");
-      productLightboxImage.src = "";
-      document.body.style.overflow = "";
-    }
-
-    if (productLightbox && productLightboxImage && productLightboxClose) {
-      document.querySelectorAll(".product-shot img, .large-image-panel img, .about-image img").forEach(image => {
-        image.addEventListener("click", () => openProductLightbox(image));
-      });
-
-      productLightboxClose.addEventListener("click", closeProductLightbox);
-      productLightbox.addEventListener("click", event => {
-        if (event.target === productLightbox) closeProductLightbox();
-      });
-    }
-
-    document.addEventListener("keydown", event => {
-      if (event.key !== "Escape") return;
-      if (productLightbox && productLightbox.classList.contains("open")) closeProductLightbox();
-    });
-  </script>
-
+</div>
 </body>
 </html>
