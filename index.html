@@ -438,6 +438,12 @@ footer {
   .about,
   .videos { padding: 24px 18px; }
 }
+
+/* Purchase navigation */
+.nav .buy-nav { display: inline-flex; align-items: center; padding: 10px 14px; background: var(--orange); color: var(--paper, #fff); font-weight: 700; white-space: nowrap; }
+.nav .buy-nav:hover { color: var(--paper, #fff); filter: brightness(1.08); }
+#studio-tools .text-panel, #tape-recorder .text-panel { gap: 18px; align-content: center; }
+#studio-tools, #tape-recorder { scroll-margin-top: 90px; }
 </style>
 </head>
 <body>
@@ -453,7 +459,7 @@ footer {
 <a class="tool-link" href="EH01_Sample_Builder.html">Sample Builder</a>
 <a class="tool-link" href="EH01_Tape.html">Tape Recorder</a>
 <a href="#video">Demos</a>
-<a href="../game/games/mirror-beam/">Game</a>
+<a class="buy-nav" href="buy.html">Buy EH-01</a>
 <a href="#signup">Kickstarter</a>
 </nav>
 </header>
@@ -467,6 +473,7 @@ footer {
 </div>
 <p class="body">Multiple synth systems, SD + memory playback, glitch, loop, morph, record and repeat in a small hands-on instrument built for immediate noise, rhythm and strange little moments.</p>
 <div class="button-row">
+<a class="button primary" href="buy.html">Buy EH-01 — A$349 AUD</a>
 <a class="button primary" href="https://www.kickstarter.com/projects/1397757174/eh-01-a-compact-experimental-sampler-synth" rel="noopener" target="_blank">Follow on Kickstarter</a>
 <a class="button" href="#features">See features</a>
 </div>
@@ -512,6 +519,33 @@ footer {
 
 <section class="studio-panel">
 <img src="images/Grey%20cover%20wide%20studio%20copy.jpg" alt="EH-01 Studio with MIDI sequencer, sample builder and recording suite">
+</section>
+
+<section class="split" id="studio-tools">
+  <div class="text-panel">
+    <h2>Acid / Granular.</h2>
+    <p>A dedicated mono engine with saw and shaped-square voices, a 303-inspired filter, accent and drive. Overlap notes for a 60 ms legato slide, then blend in the granular layer for pitch shifts and short grains or longer smears.</p>
+    <p>The MIDI Console now includes Acid / Granular controls, scale and octave selection, note velocity, step locks and overlapping note lengths. Tune spans ±2 octaves; grain playback runs from 0.125× to 8×.</p>
+    <a class="button primary" href="EH01_MIDI_Console.html">Open MIDI Console</a>
+  </div>
+  <div class="text-panel">
+    <h2>Samples. Your way.</h2>
+    <p>Build eight-slot banks in Sample Builder: load or record audio, trim it, set fades and export 44.1 kHz, mono, 16-bit RAW files. Upload a bank directly over USB or write it to your SD card.</p>
+    <p>Use the hardware engine controls to select Synth, Acid / Granular, Memory, SD or Voice. MIDI audition plays the EH-01; local preview and effects stay in your browser. An uploaded SD bank stays selected until you move the folder knob.</p>
+    <a class="button primary" href="EH01_Sample_Builder.html">Open Sample Builder</a>
+  </div>
+</section>
+<section class="split" id="tape-recorder">
+  <div class="text-panel">
+    <h2>Record it. Reuse it.</h2>
+    <p>Tape captures the EH-01’s USB audio, including Acid / Granular performances, into a multitrack timeline. Trim clips, arrange takes and export WAV, or turn a mix or selection into an EH-01 RAW sample for an SD bank.</p>
+    <a class="button primary" href="EH01_Tape.html">Open Tape Recorder</a>
+  </div>
+  <div class="text-panel">
+    <h2>Onboard recording.</h2>
+    <p>The synth can also record its own mix to the SD card for up to 20 seconds. The newest take becomes button 1 in the USERREC bank, with automatic trimming and companion trim metadata.</p>
+    <p>Tape’s separate onboard controls send start and stop/save requests to the synth. Browser recording uses the selected audio input and its own transport.</p>
+  </div>
 </section>
 
 <section class="about" id="about">
