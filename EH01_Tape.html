@@ -651,6 +651,10 @@
             </div>
             <div id="projectInfo" class="mini-status">MANUAL SAVE READY</div>
 
+            <h2>EH-01 MIDI</h2><button id="hardwareConnectBtn">Connect MIDI</button>
+            <label>MIDI output <select id="hardwareOutput"><option value="">Not connected</option></select></label>
+            <div id="hardwarePanel"></div>
+            <details><summary>Onboard SD recording</summary><div class="two"><button id="onboardStartBtn">Start Onboard</button><button id="onboardStopBtn">Stop / Save Onboard</button></div><p class="tiny">Records the synth mix on its SD card for up to 20 seconds. Newest take becomes 00_USERREC/01.RAW with .EH1 trim metadata. These commands do not start or stop Tape recording.</p><p id="onboardInfo" class="mini-status">No device recording status is returned over MIDI.</p></details>
             <h2>USB Audio</h2>
             <button id="connectBtn" class="green">Connect / Refresh</button>
             <div class="field">
@@ -679,7 +683,7 @@
               <div class="meter"><div id="meterR"></div></div>
             </div>
             <div id="inputInfo" class="mini-status">
-              SELECT EH-01 / TEENSY USB AUDIO
+              SELECT EH-01 / TEENSY USB AUDIO · RECORDS ALL ENGINES, INCLUDING ACID / GRANULAR
             </div>
 
             <h2>Transport</h2>
@@ -757,6 +761,9 @@
               <button id="exportBtn" class="green">Export Mix</button
               ><button id="exportSelectionBtn">Export Selection</button>
             </div>
+            <label>EH-01 sample slot <select id="rawSlot"><option value="1">01.RAW</option><option value="2">02.RAW</option><option value="3">03.RAW</option><option value="4">04.RAW</option><option value="5">05.RAW</option><option value="6">06.RAW</option><option value="7">07.RAW</option><option value="8">08.RAW</option></select></label>
+            <div class="two"><button id="exportRawBtn" disabled>Mix to EH-01 RAW</button><button id="exportRawSelectionBtn" disabled>Selection to RAW</button></div>
+            <p class="tiny">EH-01 RAW: 44.1 kHz, mono, signed 16-bit. Place in /SAMPLES/your-bank/. For bank upload and editing, open Sample Builder and import a WAV export.</p>
             <div id="exportInfo" class="mini-status">NO AUDIO TO EXPORT</div>
 
             <div class="metrics">
@@ -820,10 +827,36 @@
         <input id="filePicker" type="file" accept="audio/*" multiple /><input id="projectPicker" type="file" accept=".eh01tape,application/octet-stream" />
       </main>
     </div>
-    <script>
+    <script src="eh01-firmware.js"></script>
+<script>
 (() => {
   "use strict";
   const $ = (id) => document.getElementById(id);
+  let hardwareAccess=null, hardwareOutput=null;
+  function hardwareSend(cc,value) {
+    if(!hardwareOutput){setFooter('CONNECT EH-01 MIDI FIRST');return false;}
+    try{hardwareOutput.send([0xB0,cc,value]);return true;}
+    catch(e){setFooter('MIDI SEND FAILED · RECONNECT EH-01');return false;}
+  }
+  const hardwarePanel=EH01Firmware.mountPanel($('hardwarePanel'),hardwareSend,'Synth');
+  function refreshHardwareOutputs() {
+    const select=$('hardwareOutput'),previous=select.value;
+    select.innerHTML='';
+    for(const output of hardwareAccess.outputs.values())select.add(new Option(output.name||'MIDI output',output.id));
+    const preferred=[...select.options].find(o=>o.value===previous)||[...select.options].find(o=>/teensy|eh-01/i.test(o.textContent));
+    if(preferred)select.value=preferred.value;
+    hardwareOutput=hardwareAccess.outputs.get(select.value)||null;
+    $('hardwareConnectBtn').textContent=hardwareOutput?'Refresh MIDI':'Connect MIDI';
+  }
+  $('hardwareConnectBtn').onclick=async()=>{
+    if(!navigator.requestMIDIAccess){setFooter('WEB MIDI IS NOT AVAILABLE IN THIS BROWSER');return;}
+    try{hardwareAccess=await navigator.requestMIDIAccess({sysex:false});hardwareAccess.onstatechange=refreshHardwareOutputs;refreshHardwareOutputs();setFooter(hardwareOutput?'MIDI READY · SELECT THE MATCHING AUDIO INPUT TO RECORD':'NO MIDI OUTPUT FOUND');}
+    catch(e){setFooter('MIDI ACCESS UNAVAILABLE');}
+  };
+  $('hardwareOutput').onchange=()=>{hardwareOutput=hardwareAccess?.outputs.get($('hardwareOutput').value)||null;};
+  $('onboardStartBtn').onclick=()=>{if(hardwareSend(83,127))$('onboardInfo').textContent='Start request sent. Device records up to 20 seconds; check the synth for status.';};
+  $('onboardStopBtn').onclick=()=>{if(hardwareSend(83,0))$('onboardInfo').textContent='Stop / save request sent. Successful saves select the USERREC bank on the synth.';};
+
   const TRACK_H = 112,
     MAX_TRACKS = 12,
     UNDO_LIMIT = 24,
@@ -2473,6 +2506,20 @@
       a.remove();
     }, 1000);
   }
+  async function exportEh01Raw(selectionOnly) {
+    if(projectDuration()<=0 || (selectionOnly&&!hasSelection()))return;
+    const range=selectionOnly?orderedSelection():{a:0,b:projectDuration()};
+    setMini('exportInfo','RENDERING EH-01 RAW…','warn');
+    try {
+      let channels=mixRange(range.a,range.b);
+      if(projectRate!==44100)channels=await resampleMix(channels,44100);
+      const raw=EH01Firmware.pcm16Mono(channels);
+      const name=String(Number($('rawSlot').value)).padStart(2,'0')+'.RAW';
+      downloadBlob(new Blob([raw],{type:'application/octet-stream'}),name);
+      setMini('exportInfo',name+' · 44.1 kHz · MONO · 16-BIT · /SAMPLES/YOUR_BANK/','ok');
+    } catch(e) {setMini('exportInfo','RAW EXPORT FAILED: '+e.message,'error');}
+  }
+
   async function exportMix(mode) {
     if (projectDuration() <= 0) return;
     let a = 0,
@@ -2649,6 +2696,8 @@
     $("pasteBtn").disabled = !clipboard || !t;
     $("undoBtn").disabled = !undoStack.length;
     $("redoBtn").disabled = !redoStack.length;
+    $("exportRawBtn").disabled = !hp;
+    $("exportRawSelectionBtn").disabled = !hs;
     $("exportBtn").disabled = !hp;
     $("exportSelectionBtn").disabled = !hs;
     $("removeTrackBtn").disabled = tracks.length <= 1;
@@ -3010,6 +3059,8 @@
     markDirty();
     renderAll();
   };
+  $("exportRawBtn").onclick = () => exportEh01Raw(false);
+  $("exportRawSelectionBtn").onclick = () => exportEh01Raw(true);
   $("exportBtn").onclick = () => exportMix("full");
   $("exportSelectionBtn").onclick = () => exportMix("selection");
   $("saveProjectBtn").onclick = saveProjectFile;
@@ -3050,7 +3101,7 @@
   };
   $("helpBtn").onclick = () =>
     alert(
-      "EH-01 Tape v1.2\n\n• Drag a clip normally to move it, including onto another track.\n• Drag clip edges to trim non-destructively. Drag green top handles to set fades.\n• Drag empty lane space to select audio. Shift-drag selects through a clip.\n• Ctrl/Cmd-drag inside a time selection moves that audio.\n• Ctrl/Cmd+C, X and V copy, cut and paste. Ctrl/Cmd+S saves a project.\n• BPM grid and Snap can lock clips, trims, selections and the playhead.\n• Overlap two clips, select one and press Crossfade.",
+      "EH-01 Tape · Acid / Granular firmware\n\n• Connect MIDI to choose the synth engine. Connect USB Audio separately to record it.\n• Onboard recording saves to the synth SD card; Tape records into the browser timeline.\n• RAW export creates a 44.1 kHz mono 16-bit EH-01 slot. WAV export remains available.\n\n• Drag a clip normally to move it, including onto another track.\n• Drag clip edges to trim non-destructively. Drag green top handles to set fades.\n• Drag empty lane space to select audio. Shift-drag selects through a clip.\n• Ctrl/Cmd-drag inside a time selection moves that audio.\n• Ctrl/Cmd+C, X and V copy, cut and paste. Ctrl/Cmd+S saves a project.\n• BPM grid and Snap can lock clips, trims, selections and the playhead.\n• Overlap two clips, select one and press Crossfade.",
     );
   window.addEventListener("keydown", (e) => {
     if (isTypingTarget(e.target)) return;

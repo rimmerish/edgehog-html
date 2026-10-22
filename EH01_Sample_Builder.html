@@ -441,8 +441,9 @@ footer{font-size:clamp(10px,1.12vh,12px)}
     </div>
     <div id="midiInfo" class="mini-status">WAITING FOR MIDI PERMISSION</div>
 
+    <div id="hardwarePanel"></div>
     <h2>BANK SETUP</h2>
-    <div class="field"><label>Bank folder</label><input id="bankName" type="text" value="MY_BANK" maxlength="24"></div>
+    <div class="field"><label>Bank folder</label><input id="bankName" type="text" value="MY_BANK" maxlength="23"></div>
     <div class="two">
       <div class="field"><label>Root</label><input id="rootName" type="text" value="SAMPLES" maxlength="24"></div>
       <div class="field"><label>Output</label>
@@ -472,7 +473,7 @@ footer{font-size:clamp(10px,1.12vh,12px)}
     <button id="serialCancelBtn" class="red" disabled>Cancel Transfer</button>
     <progress id="serialProgress" class="transfer-progress" max="100" value="0"></progress>
     <div id="serialStatus" class="mini-status">USB SERIAL NOT CONNECTED</div>
-    <div class="tiny">Direct upload always writes EH-01 RAW 44.1K mono files to /SAMPLES/BANK. Close Arduino Serial Monitor first.</div>
+    <div class="tiny">Direct USB upload writes 16-bit mono 44.1 kHz RAW to /SAMPLES/BANK. Bank names: 1–23 characters. USERREC, SYSTEM and factory banks are protected. The uploaded bank stays selected until A17 moves. Close Arduino Serial Monitor first.</div>
 
     <div class="metrics">
       <div class="metric"><strong id="countMetric">0 / 8</strong><span>Loaded</span></div>
@@ -545,7 +546,7 @@ footer{font-size:clamp(10px,1.12vh,12px)}
       <div class="fx-head">
         <h2>SOUND SHAPER · SELECTED SLOT</h2>
         <button id="fxToggleBtn" class="green">FX ON</button>
-        <button id="fxMidiBtn">MIDI TO EH-01 OFF</button>
+        <button id="fxMidiBtn" disabled title="Use Hardware controls for firmware-specific MIDI parameters">LOCAL FX ONLY</button>
         <button id="fxResetBtn">Reset FX</button>
         <button id="fxApplyBtn" class="green">Apply to Sample</button>
       </div>
@@ -607,7 +608,7 @@ footer{font-size:clamp(10px,1.12vh,12px)}
       <button id="replaceBtn">Replace</button>
       <button id="clearSlotBtn" class="red">Clear</button>
     </div>
-    <div class="tiny">The waveform editor changes exported audio only. MIDI pad buttons trigger the matching EH-01 front-panel note.</div>
+    <div class="tiny">The waveform editor changes exported audio only. MIDI pads trigger the hardware’s current engine; use SD mode to audition uploaded banks. Local effects do not reproduce the Acid engine.</div>
   </section>
 </div>
 
@@ -618,6 +619,7 @@ footer{font-size:clamp(10px,1.12vh,12px)}
 <input id="picker" type="file" accept="audio/*" multiple>
 </main></div>
 
+<script src="eh01-firmware.js"></script>
 <script>
 (()=>{'use strict';
 
@@ -866,7 +868,7 @@ function renderFxControls(){
   const fx=fxSlots[selected],loaded=!!slots[selected].buffer;
   $('fxToggleBtn').textContent=fx.enabled?'FX ON':'FX OFF';
   $('fxToggleBtn').classList.toggle('green',fx.enabled);
-  $('fxMidiBtn').textContent=fxMidiEnabled?'MIDI TO EH-01 ON':'MIDI TO EH-01 OFF';
+  $('fxMidiBtn').textContent='LOCAL FX ONLY';
   $('fxMidiBtn').classList.toggle('blue',fxMidiEnabled);
   $('fxApplyBtn').disabled=!loaded;
   document.querySelectorAll('.fx-knob').forEach(el=>{
@@ -1188,6 +1190,7 @@ function sendMidi(data){
   if(!midiOutput){setMidiInfo('NO MIDI OUTPUT SELECTED','error');return false}
   try{midiOutput.send(data);return true}catch(e){setMidiInfo('MIDI SEND FAILED','error');return false}
 }
+const hardwarePanel=EH01Firmware.mountPanel($('hardwarePanel'),sendCC,'SD');
 function noteOn(i){return sendMidi([0x90,noteMap[i],110])}
 function noteOff(i){return sendMidi([0x80,noteMap[i],0])}
 function sendCC(cc,val){return sendMidi([0xB0,cc,val])}
@@ -1202,7 +1205,7 @@ function triggerPad(i,on){
   }
 }
 $('fxToggleBtn').onclick=()=>{fxSlots[selected].enabled=!fxSlots[selected].enabled;renderFxControls();setFooter(fxSlots[selected].enabled?'SLOT FX ENABLED':'SLOT FX BYPASSED')};
-$('fxMidiBtn').onclick=()=>{fxMidiEnabled=!fxMidiEnabled;renderFxControls();setFooter(fxMidiEnabled?'SOUND SHAPER MIDI CONTROL ON':'SOUND SHAPER MIDI CONTROL OFF')};
+$('fxMidiBtn').onclick=null;
 $('fxResetBtn').onclick=()=>{fxSlots[selected]=defaultFx();renderFxControls();setFooter('SLOT FX RESET')};
 $('fxApplyBtn').onclick=applyFxToSelected;
 $('previewBtn').onclick=()=>playLocal(selected);
@@ -1268,6 +1271,7 @@ function selectMidiPorts(){
 }
 function handleMidi(e){
   const [st,d1,d2]=e.data,cmd=st&0xF0;
+  if((st&0x0F)===0&&cmd===0xB0)hardwarePanel.update(d1,d2);
   const idx=noteMap.indexOf(d1);
   if(idx>=0&&(cmd===0x90||cmd===0x80)){
     const on=cmd===0x90&&d2>0;
@@ -1277,7 +1281,7 @@ function handleMidi(e){
   setMidiInfo('IN '+[...e.data].map(v=>v.toString(16).padStart(2,'0')).join(' ').toUpperCase(),'ok');
 }
 $('connectBtn').onclick=connectMidi;$('midiIn').onchange=selectMidiPorts;$('midiOut').onchange=selectMidiPorts;
-$('setSdBtn').onclick=()=>{if(sendCC(80,64)){setMidiInfo('EH-01 SD MODE REQUEST SENT · CC80=64','ok');setFooter('EH-01 SET TO SD SAMPLE MODE')}};
+$('setSdBtn').onclick=()=>{if(sendCC(80,64)){hardwarePanel.setMode('SD');setMidiInfo('EH-01 SD MODE REQUEST SENT · CC80=64','ok');setFooter('EH-01 SET TO SD SAMPLE MODE')}};
 $('panicBtn').onclick=()=>{for(let i=0;i<128;i++)sendMidi([0x80,i,0]);sendCC(123,0);stopLocal();setFooter('ALL NOTES OFF')};
 
 function serialRenderUi(){
@@ -1307,7 +1311,7 @@ function serialWaitLine(test,timeout=8000){
 }
 async function serialWaitEh01(prefix,timeout=10000){
   const line=await serialWaitLine(l=>l.startsWith(prefix)||l.startsWith('EH01_ERROR '),timeout);
-  if(line.startsWith('EH01_ERROR '))throw new Error(line.slice(12).replaceAll('_',' '));
+  if(line.startsWith('EH01_ERROR '))throw new Error(line.slice(11).replaceAll('_',' '));
   return line
 }
 async function serialReadLoop(){
@@ -1367,14 +1371,16 @@ function crc32(bytes){
 async function uploadBankToEh01(){
   if(serialUploadActive)return;
   if(!slots.some(s=>s.buffer)){setSerialStatus('LOAD AT LEAST ONE SAMPLE','warn');return}
-  if(!serialPort&&!(await connectEh01Serial()))return;
-  const bank=cleanName($('bankName').value);
+  let bank;
+  try{bank=EH01Firmware.validateBankName($('bankName').value);$('bankName').value=bank;}catch(e){setSerialStatus(e.message,'error');return;}
   if(!confirm('Upload and replace EH-01 bank /SAMPLES/'+bank+'? Empty slots will be cleared.'))return;
+  if(!serialPort&&!(await connectEh01Serial()))return;
 
   serialUploadActive=true;serialCancelRequested=false;setSerialProgress(0);serialRenderUi();
   try{
     setSerialStatus('BUILDING EH-01 RAW BANK','warn');setFooter('PROCESSING BANK FOR DIRECT USB UPLOAD');
     const files=await makeOutputs('raw44100','SAMPLES');
+    if(files.some(f=>!f.data.length||f.data.length>128*1024*1024))throw new Error('Each file must be between 1 byte and 128 MB.');
     const totalBytes=files.reduce((n,f)=>n+f.data.length,0);let sentBytes=0;
 
     serialLineQueue=[];await serialSendLine('EH01_HELLO');await serialWaitEh01('EH01_READY ',5000);
@@ -1396,8 +1402,9 @@ async function uploadBankToEh01(){
       await serialWaitEh01('EH01_FILE_OK ',10000)
     }
 
+    if(serialCancelRequested){await serialSendLine('EH01_ABORT');await serialWaitEh01('EH01_ABORTED',5000);throw new Error('UPLOAD_CANCELLED');}
     setSerialStatus('INSTALLING BANK','warn');await serialSendLine('EH01_END');await serialWaitEh01('EH01_BANK_OK ',15000);
-    setSerialProgress(100);setSerialStatus('BANK INSTALLED · /SAMPLES/'+bank,'ok');setExport('DIRECT USB UPLOAD COMPLETE','ok');setFooter('EH-01 BANK INSTALLED AND SELECTED')
+    setSerialProgress(100);setSerialStatus('BANK INSTALLED · /SAMPLES/'+bank,'ok');setExport('DIRECT USB UPLOAD COMPLETE','ok');hardwarePanel.setMode('SD');setFooter('EH-01 BANK INSTALLED AND SELECTED · MOVE A17 TO RELEASE FOLDER LOCK')
   }catch(e){
     console.error(e);
     if(e.message==='UPLOAD_CANCELLED')setSerialStatus('UPLOAD CANCELLED','warn');
